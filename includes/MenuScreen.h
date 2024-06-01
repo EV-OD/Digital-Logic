@@ -1,6 +1,6 @@
 #pragma once
 
-// for not needed but just in case 😂
+// Not needed but just in case 😂
 #ifndef MENUSCREEN_H
 #define MENUSCREEN_H
 

@@ -2,7 +2,7 @@
 
 
 
-// for not needed but just in case 😂
+// Not needed but just in case 😂
 #ifndef SPLASHSCREEN_H
 #define SPLASHSCREEN_H
 

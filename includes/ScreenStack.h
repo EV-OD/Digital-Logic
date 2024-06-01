@@ -1,7 +1,7 @@
 #pragma once
 
 
-// for not needed but just in case 😂
+// Not needed but just in case 😂
 #ifndef SCREENSTACK_H
 #define SCREENSTACK_H
 

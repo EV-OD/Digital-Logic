@@ -1,7 +1,7 @@
 #pragma 
 
 
-// for not needed but just in case 😂
+// Not needed but just in case 😂
 #ifndef MYWINDOW_H
 #define MYWINDOW_H
 
