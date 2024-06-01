@@ -1,0 +1,68 @@
+
+
+.splash-label{
+    margin-right: 20px;
+}
+
+.splash-label-head{
+    color:rgb(184, 184, 184);
+    font-size: 50px;
+}
+.splash-label-subhead{
+    color:rgb(184, 184, 184);
+    font-size: 30px;
+}
+.splash-label-desc{
+    color:rgb(151, 151, 151);
+    font-size: 20px;
+}
+
+window{
+    background-color: rgb(22, 22, 22);
+}
+
+
+.brand-box {
+    /* Add your styles for the brand box here */
+    margin-bottom: 40px;
+    margin-top: 60px;
+}
+
+.brand-label-box {
+    /* Add your styles for the brand label box here */
+    margin-left: 30px;
+}
+
+.brand-label {
+    color:rgb(184, 184, 184);
+    font-size: 50px;
+}
+
+.brand-sub-label {
+    color:rgb(184, 184, 184);
+    font-size: 30px;
+}
+
+.brand-desc-label {
+    color:rgb(151, 151, 151);
+    font-size: 20px;
+}
+
+.menu-box {
+    /* Add your styles for the menu box here */
+}
+
+.menu-button {
+    background-color: rgb(66, 66, 66);
+    color:rgb(193, 193, 193);
+    padding: 10px;
+    margin: 10px;
+    background-image: none;
+    background-color: rgb(66, 66, 66);
+    border: none;
+}
+
+.menu-button:hover {
+    background-color: rgb(88, 88, 88);
+    cursor: pointer;
+}
