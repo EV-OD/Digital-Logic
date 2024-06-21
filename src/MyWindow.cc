@@ -11,9 +11,14 @@ MyWindow::MyWindow()
   height = GetSystemMetrics(SM_CYSCREEN);
   set_title("Basic application");
   set_default_size(width, height);
-  screenStack = ScreenStack();
-  screenStack.show_splash();
-  set_child(screenStack);
+
+  screenStack = new ScreenStack();
+  // screenStack->show_splash();
+  screenStack->show_splash();
+  screenStack->set_vexpand(true);
+  screenStack->set_hexpand(true);
+
+  set_child(*screenStack);
 
   auto css = Gtk::CssProvider::create();
   css->load_from_path("style.css");
@@ -24,6 +29,6 @@ MyWindow::MyWindow()
 
 bool MyWindow::on_timeout()
 {
-  screenStack.show_menu();
-  return true;
+  screenStack->show_menu();
+  return false;
 }

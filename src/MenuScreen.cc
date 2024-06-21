@@ -1,8 +1,19 @@
 #include <gtkmm.h>
 #include "MenuScreen.h"
+#include "ScreenStack.h"
+#include <iostream>
 
-MenuScreen::MenuScreen()
+
+void print_hello()
 {
+  g_print("Hello, World!\n");
+}
+
+  
+MenuScreen::MenuScreen(ScreenStack *stack)
+{
+  this->stack = stack;
+  std::cout << "[initial stack]" << this->stack << std::endl;
   // wrapper
   Gtk::Box *box = Gtk::manage(new Gtk::Box(Gtk::Orientation::VERTICAL, 1));
   box->set_css_classes({"menu-area"});
@@ -47,10 +58,19 @@ MenuScreen::MenuScreen()
   // buttons
   Gtk::Button *button1 = Gtk::manage(new Gtk::Button("New Project"));
   button1->set_css_classes({"menu-button"});
+  std::cout << "Value of this: " << this << std::endl;
+  button1->signal_clicked().connect(sigc::mem_fun(*this, &MenuScreen::new_chip));
+
+
+
   Gtk::Button *button2 = Gtk::manage(new Gtk::Button("Open Project"));
   button2->set_css_classes({"menu-button"});
+  // button2->signal_clicked().connect(sigc::mem_fun(*this, &MenuScreen::open_chip));
+
   Gtk::Button *button3 = Gtk::manage(new Gtk::Button("Exit"));
   button3->set_css_classes({"menu-button"});
+  // button3->signal_clicked().connect(sigc::mem_fun(stack, &ScreenStack::exit_app));
+
   menuBox->append(*button1);
   menuBox->append(*button2);
   menuBox->append(*button3);
@@ -61,3 +81,17 @@ MenuScreen::MenuScreen()
   box->append(*menuBox);
   set_child(*box);
 }
+
+void MenuScreen::new_chip()
+{
+  stack->show_chip_area();
+
+}
+
+void MenuScreen::open_chip()
+{
+  stack->show_dialog();
+}
+
+
+

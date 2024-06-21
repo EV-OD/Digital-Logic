@@ -19,6 +19,7 @@
 
 window{
     background-color: rgb(22, 22, 22);
+    border: none;
 }
 
 
@@ -65,4 +66,55 @@ window{
 .menu-button:hover {
     background-color: rgb(88, 88, 88);
     cursor: pointer;
+}
+
+.frame{
+    background-color: rgb(88, 88, 88);
+    padding: 30px;
+    border:none;
+}
+
+
+.close_btn{
+    background-color: rgb(66, 66, 66);
+    color:rgb(193, 193, 193);
+    padding: 10px;
+    margin: 10px;
+    background-image: none;
+    background-color: rgb(66, 66, 66);
+    border: none;
+}
+.close_btn:hover {
+    background-color: rgb(88, 88, 88);
+}
+
+
+.chip-area {
+    background-color: rgb(127, 58, 58);
+}
+
+.chip-btn{
+    color:rgb(193, 193, 193);
+    padding: 10px;
+    background-image: none;
+    background-color: rgb(66, 66, 66);
+    border: none;
+    margin-right: 4px;
+}
+.chip-btn:hover {
+    background-color: rgb(88, 88, 88);
+    cursor: pointer;
+}
+
+.chip-selector {
+    background-color: rgb(48, 48, 48);
+}
+
+.creation-area {
+    background-color: rgb(38, 38, 38);
+    margin: 30px;
+    /* Add your styles for the creation area here */
+}
+.screen-stack{
+    /* Add your styles for the creation area here */
 }

@@ -5,10 +5,15 @@
 #define MENUSCREEN_H
 
 #include <gtkmm.h>
+class ScreenStack;
+
 
 class MenuScreen : public Gtk::Frame
 {
 public:
-  MenuScreen();
+  MenuScreen(ScreenStack *stack);
+  ScreenStack *stack;
+  void new_chip();
+  void open_chip();
 };
 #endif

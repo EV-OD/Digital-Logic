@@ -16,9 +16,6 @@ include_directories(includes)
 add_subdirectory(src)
 
 
-
-
-
 # cmake_minimum_required(VERSION 3.5)
 
 # project(example)

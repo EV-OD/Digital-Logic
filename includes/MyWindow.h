@@ -15,7 +15,7 @@ public:
   MyWindow();
   int height;
   int width;
-  ScreenStack screenStack;
+  ScreenStack *screenStack;
   bool on_timeout();
 };
 
