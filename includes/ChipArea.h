@@ -40,11 +40,15 @@ public:
     
 
   Glib::RefPtr<Gtk::GestureDrag> m_GestureDrag;
+  Glib::RefPtr<Gtk::GestureClick> m_GestureClick;
+
 
 
   void on_my_drag_begin(double start_x, double start_y);
   void on_my_drag_end(double offset_x, double offset_y);
   void on_my_drag_update(double offset_x, double offset_y);
+
+  void on_my_pressed(int n_press, double x, double y);
 
 
 
@@ -111,8 +115,8 @@ public:
     void setRadius(int radius);
     void printCord();
     Cord getCord();
-    int state = 0;
     Chip *chip;
+    int state = 0;
 };
 
 class InputPin : public Pin {
@@ -165,6 +169,8 @@ class Chip{
   bool isMouseInside(int x, int y);
   bool isDragging = false;
   ChipType type;
+  void addInputPin(InputPin *inputPin);
+  void addOutputPin(OutputPin *outputPin);
   void run();
   void setChipType(ChipType type){
         this->type = type;
@@ -184,6 +190,8 @@ public:
     int y;
     int state = 0;
     int radius = 20;
+    ChipBoundingBox *boundingBox;
+    
 };
 
 class GlobalOutputPin : public Pin{
