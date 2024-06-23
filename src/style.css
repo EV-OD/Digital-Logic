@@ -50,7 +50,7 @@ window{
 }
 
 .menu-box {
-    /* Add your styles for the menu box here */
+border:none;
 }
 
 .menu-button {
@@ -113,8 +113,7 @@ window{
 .creation-area {
     background-color: rgb(38, 38, 38);
     margin: 30px;
-    /* Add your styles for the creation area here */
 }
 .screen-stack{
-    /* Add your styles for the creation area here */
+    border:none;
 }
