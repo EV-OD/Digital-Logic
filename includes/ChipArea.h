@@ -109,8 +109,8 @@ public:
     void setRadius(int radius);
     void printCord();
     Cord getCord();
-    int state = 0;
     Chip *chip;
+    int state = 0;
 };
 
 class InputPin : public Pin {
@@ -163,6 +163,8 @@ class Chip{
   bool isMouseInside(int x, int y);
   bool isDragging = false;
   ChipType type;
+  void addInputPin(InputPin *inputPin);
+  void addOutputPin(OutputPin *outputPin);
   void run();
   void setChipType(ChipType type){
         this->type = type;

@@ -58,7 +58,10 @@ ChipArea::ChipArea(ScreenStack *stack)
     globalOutputPins = new std::vector<GlobalOutputPin *>();
 
     GlobalInputPin *globalInputPin = new GlobalInputPin(0, 30);
+    globalInputPin->state = 1;
     GlobalInputPin *globalInputPin2 = new GlobalInputPin(1, 100);
+    globalInputPin2->state = 0;
+
     GlobalOutputPin *globalOutputPin = new GlobalOutputPin(0, 30);
 
     globalInputPins->push_back(globalInputPin);
@@ -207,6 +210,8 @@ void ChipArea::create_chip(int index)
     chips->push_back(*chipAND);
     chips->push_back(*chipNOT);
 
+    run();
+
     canvas->queue_draw();
 }
 
@@ -218,23 +223,20 @@ void ChipArea::clear_canvas(const Cairo::RefPtr<Cairo::Context> &cr)
 }
 
 void ChipArea::run(){
-    // check all globalInputsPins
-    // find all it's bind and update the PIN state
 
-    // for(int i = 0;i < globalInputPins->size();i++){
-    //     for(int j = 0;j < globalInputPins->at(i)->binds->size();j++){
-    //         globalInputPins->at(i)->binds->at(j).input.state = globalInputPins->at(i)->state;
-    //         if(globalInputPins->at(i)->binds->at(j).input.chip != nullptr){
-    //             if(globalInputPins->at(i)->binds->at(j).input.chip->type == ChipType::NOT){
-    //                 globalInputPins->at(i)->binds->at(j).input.chip->outputPins[0]->state = !globalInputPins->at(i)->state;
-    //             }else if(globalInputPins->at(i)->binds->at(j).input.chip->type == ChipType::AND){
-    //                 globalInputPins->at(i)->binds->at(j).input.chip->outputPins[0]->state = globalInputPins->at(i)->state && globalInputPins->at(i)->binds->at(j).input.state;
-    //             }else{
-    //                 globalInputPins->at(i)->binds->at(j).input.chip->outputPins[0]->state = globalInputPins->at(i)->state;
-    //             }
-    //         }
-    //     }
-    // }
+    std::vector<Chip *> chips;
+
+    for(int i = 0;i < globalInputPins->size();i++){
+        for(int j = 0;j < globalInputPins->at(i)->binds->size();j++){
+            globalInputPins->at(i)->binds->at(j).input.state = globalInputPins->at(i)->state;
+            if(globalInputPins->at(i)->binds->at(j).input.chip != nullptr){
+                chips.push_back(globalInputPins->at(i)->binds->at(j).input.chip);
+            }
+        }
+    }
+    for(int i = 0;i < chips.size();i++){
+        chips[i]->run();
+    }
 }
 
 void ChipArea::draw_on_canvas(const Cairo::RefPtr<Cairo::Context> &cr,
@@ -242,13 +244,20 @@ void ChipArea::draw_on_canvas(const Cairo::RefPtr<Cairo::Context> &cr,
 {
     clear_canvas(cr);
 
+    // global input pins
     for (int i = 0; i < globalInputPins->size(); i++)
     {
         cr->set_source_rgb(200 / 255.0, 39 / 255.0, 92 / 255.0);
         cr->arc(globalInputPins->at(i)->radius + 10, globalInputPins->at(i)->y, globalInputPins->at(i)->radius, 0, 2 * M_PI);
         cr->fill();
 
-        cr->set_source_rgb(20 / 255.0, 20 / 255.0, 20 / 255.0);
+        if(globalInputPins->at(i)->state == 1){
+            cr->set_source_rgb(2550 / 255.0, 255 / 255.0, 255 / 255.0);
+
+        } else {
+            cr->set_source_rgb(20 / 255.0, 20 / 255.0, 20 / 255.0);
+        }
+
         cr->arc(globalInputPins->at(i)->radius + 10, globalInputPins->at(i)->y, globalInputPins->at(i)->radius / 2, 0, 2 * M_PI);
         cr->fill();
 
@@ -256,10 +265,16 @@ void ChipArea::draw_on_canvas(const Cairo::RefPtr<Cairo::Context> &cr,
     for (int i = 0; i < globalOutputPins->size(); i++)
     {
         cr->set_source_rgb(200 / 255.0, 39 / 255.0, 92 / 255.0);
+
         cr->arc(width - globalOutputPins->at(i)->radius - 10, globalOutputPins->at(i)->y, globalOutputPins->at(i)->radius, 0, 2 * M_PI);
         cr->fill();
 
-        cr->set_source_rgb(20 / 255.0, 20 / 255.0, 20 / 255.0);
+        if(globalOutputPins->at(i)->state == 1){
+            cr->set_source_rgb(255 / 255.0, 255 / 255.0, 255 / 255.0);
+
+        } else {
+            cr->set_source_rgb(20 / 255.0, 20 / 255.0, 20 / 255.0);
+        }
         cr->arc(width - globalOutputPins->at(i)->radius - 10, globalOutputPins->at(i)->y, globalOutputPins->at(i)->radius / 2, 0, 2 * M_PI);
         cr->fill();
         globalOutputPins->at(i)->x = width - globalOutputPins->at(i)->radius - 10;
@@ -271,10 +286,7 @@ void ChipArea::draw_on_canvas(const Cairo::RefPtr<Cairo::Context> &cr,
     {
         (*chips)[i].draw(cr);
     }
-    for (int i = 0; i < chips->size(); i++)
-    {
-        (*chips)[i].draw(cr);
-    }
+
 
     // draw line between GlobalInputPin and input pins
     for (int i = 0; i < globalInputPins->size(); i++)
@@ -282,13 +294,21 @@ void ChipArea::draw_on_canvas(const Cairo::RefPtr<Cairo::Context> &cr,
 
         for (int j = 0; j < globalInputPins->at(i)->binds->size(); j++)
         {
-            cr->set_source_rgb(20 / 255.0, 20 / 255.0, 20 / 255.0);
+            if(globalInputPins->at(i)->state == 1){
+                cr->set_source_rgb(255 / 255.0, 255 / 255.0, 255 / 255.0);
+            } else {
+                cr->set_source_rgb(20 / 255.0, 20 / 255.0, 20 / 255.0);
+            }
             cr->set_line_width(4);
 
             cr->move_to(globalInputPins->at(i)->radius + 10, globalInputPins->at(i)->y);
             cr->line_to(globalInputPins->at(i)->binds->at(j).input.x, globalInputPins->at(i)->binds->at(j).input.y);
             cr->stroke();
         }
+    }
+    for (int i = 0; i < chips->size(); i++)
+    {
+        (*chips)[i].draw(cr);
     }
 }
 
@@ -320,8 +340,8 @@ void ChipSelectorUI::on_chip_selected(int index)
     selected_chip = index;
 }
 
-Bind::Bind(InputPin &input) : input(input)
-{
+Bind::Bind(InputPin &input) : input(input){
+
 }
 
 BindToGlobalOutPut::BindToGlobalOutPut(GlobalOutputPin &output) : output(output)
@@ -340,6 +360,7 @@ Pin::Pin(std::string name, int index)
     this->name = name;
     this->index = index;
 }
+
 
 void Pin::printCord()
 {
@@ -430,13 +451,61 @@ Chip::Chip(ChipStructure *structure, std::vector<InputPin *> inputPins, std::vec
     }
 };
 
+void Chip::addInputPin(InputPin *inputPin){
+    inputPin->chip = this;
+    inputPins.push_back(inputPin);
+}
+
+void Chip::addOutputPin(OutputPin *outputPin){
+    outputPin->chip = this;
+    outputPins.push_back(outputPin);
+}
+
 void Chip::run(){
+    // check chip type
+    // if AND then check all inputPins and update the outputPins
+    // if NOT then check all inputPins and update the outputPins
+    // if CUSTOM then little bit complex
+    // if outputPins are connected to any other chip then update that chip
+    // if outputPins are connected to globalOutputPins then update the globalOutputPins
+
+    if(type == ChipType::AND){
+        for(int i = 0;i < outputPins.size();i++){
+            outputPins[i]->state = inputPins[0]->state && inputPins[1]->state;
+        }
+    } else if(type == ChipType::NOT){
+        for(int i = 0;i < outputPins.size();i++){
+            outputPins[i]->state = !inputPins[0]->state;
+        }
+    } else if(type == ChipType::CUSTOM){
+        // custom logic
+    }
+
+    // array of chips
+    std::vector<Chip *> chips;
     
+    for(int i = 0;i < outputPins.size();i++){
+        for(int j = 0;j < outputPins[i]->binds->size();j++){
+            outputPins[i]->binds->at(j).input.state = outputPins[i]->state;
+            if(outputPins[i]->binds->at(j).input.chip != nullptr){
+                chips.push_back(outputPins[i]->binds->at(j).input.chip);
+            }
+        }
+    }
+
+    for(int i = 0;i < outputPins.size();i++){
+        for(int j = 0;j < outputPins[i]->bindsToGlobalOutput->size();j++){
+            outputPins[i]->bindsToGlobalOutput->at(j).output.state = outputPins[i]->state;
+        }
+    }
+
+    for(int i = 0;i < chips.size();i++){
+        chips[i]->run();
+    }
 }
 
 bool Chip::isMouseInside(int x, int y)
 {
-
     // std::cout << "X: " << x << " Y: " << y << " Chip X: " << structure->boundingBox->x << " Chip Y: " << structure->boundingBox->y << " Chip Width: " << structure->boundingBox->width << " Chip Height: " << structure->boundingBox->height << std::endl;
     return x >= structure->boundingBox->x && x <= structure->boundingBox->x + structure->boundingBox->width && y >= structure->boundingBox->y && y <= structure->boundingBox->y + structure->boundingBox->height;
 }
@@ -490,8 +559,11 @@ void Chip::draw(const Cairo::RefPtr<Cairo::Context> &cr)
 
     for (int i = 0; i < inputPins.size(); i++)
     {
-
-        cr->set_source_rgb(20 / 255.0, 20 / 255.0, 20 / 255.0);
+        if(inputPins[i]->state == 1){
+            cr->set_source_rgb(255 / 255.0, 255 / 255.0, 255 / 255.0);
+        } else {
+            cr->set_source_rgb(20 / 255.0, 20 / 255.0, 20 / 255.0);
+        }
         // cr->arc(20, i * gapper + gapper / 2, 5, 0, 2 * M_PI);
         int inputPinEachHeight = height / inputPins.size();
         cr->arc(x, y + i * (inputPinEachHeight) + (inputPinEachHeight / 2), eachPinSpace - 3, 0, 2 * M_PI);
@@ -511,7 +583,11 @@ void Chip::draw(const Cairo::RefPtr<Cairo::Context> &cr)
     // draw the output pins
     for (int i = 0; i < outputPins.size(); i++)
     {
-        cr->set_source_rgb(20 / 255.0, 20 / 255.0, 20 / 255.0);
+        if(outputPins[i]->state == 1){
+            cr->set_source_rgb(255 / 255.0, 255 / 255.0, 255 / 255.0);
+        } else {
+            cr->set_source_rgb(20 / 255.0, 20 / 255.0, 20 / 255.0);
+        }
         // cr->arc(80, i * gapper + gapper / 2, 5, 0, 2 * M_PI);
         int outputPinEachHeight = height / outputPins.size();
         cr->arc(x + width, y + i * (outputPinEachHeight) + (outputPinEachHeight / 2), eachPinSpace - 3, 0, 2 * M_PI);
@@ -526,17 +602,17 @@ void Chip::draw(const Cairo::RefPtr<Cairo::Context> &cr)
         outputPins[i]->printCord();
 
         // std::cout << "x:" << outputPins[i]->x << " y:" << outputPins[i]->y << std::endl;
-        // std::cout << "Size:" << outputPins[i]->binds->size() << std::endl;
-        if (outputPins[i]->binds->size() > 0)
-        {
-            // std::cout << "Bind \n";
+        // // std::cout << "Size:" << outputPins[i]->binds->size() << std::endl;
+        // if (outputPins[i]->binds->size() > 0)
+        // {
+        //     // std::cout << "Bind \n";
 
-            for (int j = 0; j < outputPins[i]->binds->size(); j++)
-            {
-                // std::cout << "address of inputPin: " << outputPins[i]->binds->at(j).input << std::endl;
-                outputPins[i]->binds->at(j).printConnection();
-            }
-        }
+        //     for (int j = 0; j < outputPins[i]->binds->size(); j++)
+        //     {
+        //         // std::cout << "address of inputPin: " << outputPins[i]->binds->at(j).input << std::endl;
+        //         outputPins[i]->binds->at(j).printConnection();
+        //     }
+        // }
     }
 
     // draw line between input and output pins
@@ -544,7 +620,11 @@ void Chip::draw(const Cairo::RefPtr<Cairo::Context> &cr)
     {
         for (int j = 0; j < outputPins[i]->binds->size(); j++)
         {
-            cr->set_source_rgb(20 / 255.0, 20 / 255.0, 20 / 255.0);
+            if(outputPins[i]->state == 1){
+                cr->set_source_rgb(255 / 255.0, 255 / 255.0, 255 / 255.0);
+            } else {
+                cr->set_source_rgb(20 / 255.0, 20 / 255.0, 20 / 255.0);
+            }
             cr->set_line_width(4);
 
             cr->move_to(outputPins[i]->x, outputPins[i]->y);
@@ -558,7 +638,11 @@ void Chip::draw(const Cairo::RefPtr<Cairo::Context> &cr)
     {
         for (int j = 0; j < outputPins[i]->bindsToGlobalOutput->size(); j++)
         {
-            cr->set_source_rgb(20 / 255.0, 20 / 255.0, 20 / 255.0);
+            if(outputPins[i]->state == 1){
+                cr->set_source_rgb(255 / 255.0, 255 / 255.0, 255 / 255.0);
+            } else {
+                cr->set_source_rgb(20 / 255.0, 20 / 255.0, 20 / 255.0);
+            }
             cr->set_line_width(4);
             // width - globalOutputPins->at(i)->radius - 10
             cr->move_to(outputPins[i]->x, outputPins[i]->y);
