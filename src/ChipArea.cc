@@ -6,6 +6,7 @@
 #include <iostream>
 
 #define margin 30
+#define globalPinGap 40
 
 ChipArea::ChipArea(ScreenStack *stack)
 {
@@ -81,6 +82,10 @@ ChipArea::ChipArea(ScreenStack *stack)
     // add container to the
     wrapper->append(*container);
     set_child(*wrapper);
+}
+
+void ChipArea::on_my_pressed(int n_press, double x, double y){
+
 }
 
 void ChipArea::on_my_drag_begin(double start_x, double start_y)
@@ -244,11 +249,36 @@ void ChipArea::draw_on_canvas(const Cairo::RefPtr<Cairo::Context> &cr,
 {
     clear_canvas(cr);
 
-    // global input pins
+    // global output pins
+    for (int i = 0; i < globalOutputPins->size(); i++)
+    {
+        cr->set_source_rgb(200 / 255.0, 39 / 255.0, 92 / 255.0);
+
+        cr->arc(width - globalOutputPins->at(i)->radius - globalPinGap, globalOutputPins->at(i)->y, globalOutputPins->at(i)->radius, 0, 2 * M_PI);
+        cr->fill();
+
+        if(globalOutputPins->at(i)->state == 1){
+            cr->set_source_rgb(255 / 255.0, 255 / 255.0, 255 / 255.0);
+
+        } else {
+            cr->set_source_rgb(20 / 255.0, 20 / 255.0, 20 / 255.0);
+        }
+        cr->arc(width - globalOutputPins->at(i)->radius - globalPinGap, globalOutputPins->at(i)->y, globalOutputPins->at(i)->radius / 2, 0, 2 * M_PI);
+        cr->fill();
+        globalOutputPins->at(i)->x = width - globalOutputPins->at(i)->radius - globalPinGap;
+    }
+
+
+
+    for (int i = 0; i < chips->size(); i++)
+    {
+        (*chips)[i].draw(cr);
+    }
+        // global input pins
     for (int i = 0; i < globalInputPins->size(); i++)
     {
         cr->set_source_rgb(200 / 255.0, 39 / 255.0, 92 / 255.0);
-        cr->arc(globalInputPins->at(i)->radius + 10, globalInputPins->at(i)->y, globalInputPins->at(i)->radius, 0, 2 * M_PI);
+        cr->arc(globalInputPins->at(i)->radius + globalPinGap, globalInputPins->at(i)->y, globalInputPins->at(i)->radius, 0, 2 * M_PI);
         cr->fill();
 
         if(globalInputPins->at(i)->state == 1){
@@ -258,33 +288,26 @@ void ChipArea::draw_on_canvas(const Cairo::RefPtr<Cairo::Context> &cr,
             cr->set_source_rgb(20 / 255.0, 20 / 255.0, 20 / 255.0);
         }
 
-        cr->arc(globalInputPins->at(i)->radius + 10, globalInputPins->at(i)->y, globalInputPins->at(i)->radius / 2, 0, 2 * M_PI);
+        cr->arc(globalInputPins->at(i)->radius + globalPinGap, globalInputPins->at(i)->y, globalInputPins->at(i)->radius / 2, 0, 2 * M_PI);
         cr->fill();
+        globalInputPins->at(i)->x = globalInputPins->at(i)->radius + globalPinGap;
 
-    }
-    for (int i = 0; i < globalOutputPins->size(); i++)
-    {
-        cr->set_source_rgb(200 / 255.0, 39 / 255.0, 92 / 255.0);
-
-        cr->arc(width - globalOutputPins->at(i)->radius - 10, globalOutputPins->at(i)->y, globalOutputPins->at(i)->radius, 0, 2 * M_PI);
-        cr->fill();
-
-        if(globalOutputPins->at(i)->state == 1){
-            cr->set_source_rgb(255 / 255.0, 255 / 255.0, 255 / 255.0);
-
-        } else {
-            cr->set_source_rgb(20 / 255.0, 20 / 255.0, 20 / 255.0);
+        // rectange before the global input pin
+        if(globalInputPins->at(i)->state == 1){
+            cr->set_source_rgb(200 / 255.0, 50 / 255.0, 100 / 255.0);
+        }else{
+            
         }
-        cr->arc(width - globalOutputPins->at(i)->radius - 10, globalOutputPins->at(i)->y, globalOutputPins->at(i)->radius / 2, 0, 2 * M_PI);
+        int rectangeWidth = 20;
+        int rectangeHeight = 20;
+        // globalInputPins->at(i)->boundingBox->width = rectangeWidth;
+        // globalInputPins->at(i)->boundingBox->height = rectangeHeight;
+        // globalInputPins->at(i)->boundingBox->x = globalInputPins->at(i)->x - globalInputPins->at(i)->radius - rectangeWidth - 10;
+        // globalInputPins->at(i)->boundingBox->y = globalInputPins->at(i)->y - (rectangeHeight / 2);
+
+        globalInputPins->at(i)->boundingBox = new ChipBoundingBox{rectangeWidth, rectangeHeight, globalInputPins->at(i)->x - globalInputPins->at(i)->radius - rectangeWidth - 10, globalInputPins->at(i)->y - (rectangeHeight / 2)};
+        cr->rectangle(globalInputPins->at(i)->boundingBox->x, globalInputPins->at(i)->boundingBox->y, rectangeWidth, rectangeHeight);
         cr->fill();
-        globalOutputPins->at(i)->x = width - globalOutputPins->at(i)->radius - 10;
-    }
-
-
-
-    for (int i = 0; i < chips->size(); i++)
-    {
-        (*chips)[i].draw(cr);
     }
 
 
@@ -301,7 +324,7 @@ void ChipArea::draw_on_canvas(const Cairo::RefPtr<Cairo::Context> &cr,
             }
             cr->set_line_width(4);
 
-            cr->move_to(globalInputPins->at(i)->radius + 10, globalInputPins->at(i)->y);
+            cr->move_to(globalInputPins->at(i)->radius + globalPinGap, globalInputPins->at(i)->y);
             cr->line_to(globalInputPins->at(i)->binds->at(j).input.x, globalInputPins->at(i)->binds->at(j).input.y);
             cr->stroke();
         }

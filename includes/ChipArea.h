@@ -38,11 +38,15 @@ public:
     
 
   Glib::RefPtr<Gtk::GestureDrag> m_GestureDrag;
+  Glib::RefPtr<Gtk::GestureClick> m_GestureClick;
+
 
 
   void on_my_drag_begin(double start_x, double start_y);
   void on_my_drag_end(double offset_x, double offset_y);
   void on_my_drag_update(double offset_x, double offset_y);
+
+  void on_my_pressed(int n_press, double x, double y);
 
 
 
@@ -184,6 +188,8 @@ public:
     int y;
     int state = 0;
     int radius = 20;
+    ChipBoundingBox *boundingBox;
+    
 };
 
 class GlobalOutputPin : public Pin{
