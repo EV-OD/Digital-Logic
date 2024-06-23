@@ -110,6 +110,10 @@ border:none;
     background-color: rgb(48, 48, 48);
 }
 
+.chip-menu-btn{
+    background-color: rgb(114, 124, 213);
+}
+
 .creation-area {
     background-color: rgb(38, 38, 38);
     margin: 30px;

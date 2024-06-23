@@ -22,6 +22,8 @@ public:
   Gtk::Grid *container;
   ScreenStack *stack;
   Gtk::DrawingArea *canvas;
+
+  Gtk::Overlay *overlay;
   
   std::vector<Chip> *chips;
   Chip *draggedChip;
@@ -194,7 +196,10 @@ public:
     int radius = 20;
 };
 
-
+class ChipSelectorMenu: public Gtk::Box
+{
+    private:
+};
 
 
 #endif

@@ -13,6 +13,7 @@ ChipArea::ChipArea(ScreenStack *stack)
     int width = GetSystemMetrics(SM_CXSCREEN);
     int height = GetSystemMetrics(SM_CYSCREEN);
 
+    overlay = Gtk::manage(new Gtk::Overlay());
     Gtk::Box *wrapper = Gtk::manage(new Gtk::Box(Gtk::Orientation::HORIZONTAL, 0));
     wrapper->add_css_class({"chip-wrapper"});
     wrapper->set_vexpand(true);
@@ -75,9 +76,12 @@ ChipArea::ChipArea(ScreenStack *stack)
     chipSelector->add_css_class({"chip-selector"});
     container->attach(*chipSelector, 0, 3, 1, 1);
 
+
+
     // add container to the
     wrapper->append(*container);
-    set_child(*wrapper);
+    overlay->set_child(*wrapper);
+    set_child(*overlay);
 }
 
 void ChipArea::on_my_drag_begin(double start_x, double start_y)
@@ -299,8 +303,9 @@ ChipSelectorUI::ChipSelectorUI()
     set_spacing(0);
 
     menu = Gtk::manage(new Gtk::Button());
-    menu->set_label("Menu");
-    menu->set_size_request(50, 50);
+    menu->set_label("MENU");
+
+    menu->set_size_request(100, 50);
     menu->set_css_classes({"chip-menu-btn", "chip-btn"});
     append(*menu);
 
@@ -314,6 +319,8 @@ ChipSelectorUI::ChipSelectorUI()
         append(*chips[i]);
     }
 }
+
+
 
 void ChipSelectorUI::on_chip_selected(int index)
 {
