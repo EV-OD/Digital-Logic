@@ -1,19 +1,22 @@
-
 file(GLOB SRC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.cc)
 list(REMOVE_ITEM SRC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/main.cc)
 
 add_executable(program main.cpp ${SRC_FILES})
 
-# Copy style.css from src to build folder
-add_custom_command(TARGET program POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+# Create a custom target to copy style.css every time
+add_custom_target(copy_style_css ALL
+    COMMAND ${CMAKE_COMMAND} -E copy
     ${CMAKE_CURRENT_SOURCE_DIR}/style.css
-    $<TARGET_FILE_DIR:program>)
+    ${CMAKE_CURRENT_BINARY_DIR}/style.css
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/style.css)
 
-# Copy assets folder from src to build folder
+# Ensure the copy target is built before the main executable
+add_dependencies(program copy_style_css)
+
+# Copy assets folder from src to build/src folder
 add_custom_command(TARGET program POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${CMAKE_CURRENT_SOURCE_DIR}/assets
-    $<TARGET_FILE_DIR:program>/assets)
+    ${CMAKE_CURRENT_BINARY_DIR}/assets)
 
 target_link_libraries(program ${GTKMM_LIBRARIES})
