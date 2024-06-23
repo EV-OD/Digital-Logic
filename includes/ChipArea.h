@@ -163,7 +163,7 @@ class Chip{
   bool isMouseInside(int x, int y);
   bool isDragging = false;
   ChipType type;
-    void run();
+  void run();
   void setChipType(ChipType type){
         this->type = type;
   }
