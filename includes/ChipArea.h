@@ -8,6 +8,10 @@
 class ScreenStack;
 
 class Chip;
+class OutputPin;
+class InputPin;
+class GlobalInputPin;
+class GlobalOutputPin;
 
 class ChipArea : public Gtk::Frame
 {
@@ -21,6 +25,16 @@ public:
   
   std::vector<Chip> *chips;
   Chip *draggedChip;
+  void run();
+
+//   GlobalInputPin *draggedGlobalInputPin;
+//   GlobalOutputPin *draggedGlobalOutputPin;
+// it's vector
+   std::vector<GlobalInputPin *> *globalInputPins;
+   std::vector<GlobalOutputPin *> *globalOutputPins;
+
+  OutputPin *draggedOutputPin;
+  InputPin *draggedInputPin;
     
 
   Glib::RefPtr<Gtk::GestureDrag> m_GestureDrag;
@@ -62,42 +76,61 @@ struct ChipBoundingBox{
 
 void clear_canvas(const Cairo::RefPtr<Cairo::Context>& cr);
 
-// class Bind{
-// public:
-//   Bind(OutputPin *output, InputPin *input);
-//   // self (output)
-//   // next node (input)
-//   // location []
-//   // stroke
-//   // color
-
-//   OutputPin *output;
-//   InputPin *input;
-// };
-
-class InputPin{
+class Bind {
 public:
-    InputPin(std::string name, int index);
+    Bind(InputPin &input);  // Accept a reference to InputPin
+    void printConnection();
+    InputPin &input;  // Store input as a reference
+};
+
+class BindToGlobalOutPut {
+public:
+    BindToGlobalOutPut(GlobalOutputPin &output);  // Accept a reference to InputPin
+    GlobalOutputPin &output;  // Store input as a reference
+};
+
+struct Cord{
+    int x;
+    int y;
+};
+
+
+
+class Pin {
+public:
+    Pin(std::string name, int index);
     std::string name;
     int index;
     int x;
     int y;
-    void setCord(int x,int y);
-    // void isInside(int mouseX, int mouseY);
+    void setCord(int x, int y);
+    bool isInside(int mouseX, int mouseY);
+    int radius;
+    void setRadius(int radius);
+    void printCord();
+    Cord getCord();
+    int state = 0;
+    Chip *chip;
 };
 
-class OutputPin{
+class InputPin : public Pin {
 public:
-    OutputPin( std::string name, int index);
-    std::string name;
-    int index;
-    int x;
-    int y;
-    void setCord(int x,int y);
-    // void isInside(int mouseX, int mouseY);
-    // Bind *bind;
+    InputPin(std::string name, int index) : Pin(name, index) {};
 };
 
+class OutputPin : public Pin {
+public:
+    OutputPin(std::string name, int index) : Pin(name, index) {
+        binds = new std::vector<Bind>();
+        bindsToGlobalOutput = new std::vector<BindToGlobalOutPut>();
+
+    }
+    // bind should be array
+    std::vector<Bind> *binds;
+    std::vector<BindToGlobalOutPut> *bindsToGlobalOutput;
+    void bindTo(InputPin &input);
+    void bindToGlobalOutput(GlobalOutputPin &output);
+};
 class ChipStructure{
 public:
     ChipStructure(ChipBoundingBox *boundingBox);
@@ -111,34 +144,54 @@ struct MouseOffset {
     double y;
 };
 
+enum ChipType{
+    AND,
+    NOT,
+    CUSTOM
+};
+
 class Chip{
   public:
-  Chip(ChipStructure *structure, std::vector<InputPin> *inputPins, std::vector<OutputPin> *outputPins, std::string name);
+  Chip(ChipStructure *structure, std::vector<InputPin *> inputPins, std::vector<OutputPin *> outputPins, std::string name);
+
   ChipStructure *structure;
-  std::vector<InputPin> *inputPins;
-  std::vector<OutputPin> *outputPins;
+  std::vector<InputPin *> inputPins;
+  std::vector<OutputPin *> outputPins;
   std::string name;
   void draw(const Cairo::RefPtr<Cairo::Context>& cr);
   MouseOffset getMouseOffset(int x, int y);
   bool isMouseInside(int x, int y);
   bool isDragging = false;
+  ChipType type;
+    void run();
+  void setChipType(ChipType type){
+        this->type = type;
+  }
 };
 
 
-class GlobalInputPin{
+class GlobalInputPin : public Pin{
 public:
-    GlobalInputPin(int index, int y);
-    std::string name = "A";
-    int index;
+    GlobalInputPin(int index, int y): Pin("Input", index){
+        this->y = y;
+        binds = new std::vector<Bind>();
+    }
+    // bind should be array
+    std::vector<Bind> *binds;
+    void bindTo(InputPin &input);
     int y;
+    int state = 0;
+    int radius = 20;
 };
 
-class GlobalOutputPin{
+class GlobalOutputPin : public Pin{
 public:
-    GlobalOutputPin(int index, int y);
-    std::string name = "O";
-    int index;
+    GlobalOutputPin(int index, int y): Pin("Output", index){
+        this->y = y;
+    }
     int y;
+    int state = 0;
+    int radius = 20;
 };
 
 
