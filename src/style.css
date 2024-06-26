@@ -110,10 +110,33 @@ border:none;
     background-color: rgb(48, 48, 48);
 }
 
+.chip-menu-btn{
+    background-color: rgb(114, 124, 213);
+}
+
 .creation-area {
     background-color: rgb(38, 38, 38);
     margin: 30px;
 }
 .screen-stack{
+    border:none;
+}
+.action-menu-btn
+{
+    color:rgb(193, 193, 193);
+    padding: 10px;
+    background-image: none;
+    background-color: rgb(66, 66, 66);
+    border: none;
+}
+.action-menu-btn:hover
+{
+    background-color: rgb(88, 88, 88);
+}
+
+.action-menu-area
+{
+    background-color: rgb(88, 88, 88);
+    /* padding: 30px; */
     border:none;
 }

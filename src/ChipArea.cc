@@ -14,6 +14,7 @@ ChipArea::ChipArea(ScreenStack *stack)
     int width = GetSystemMetrics(SM_CXSCREEN);
     int height = GetSystemMetrics(SM_CYSCREEN);
 
+    overlay = Gtk::manage(new Gtk::Overlay());
     Gtk::Box *wrapper = Gtk::manage(new Gtk::Box(Gtk::Orientation::HORIZONTAL, 0));
     wrapper->add_css_class({"chip-wrapper"});
     wrapper->set_vexpand(true);
@@ -40,7 +41,7 @@ ChipArea::ChipArea(ScreenStack *stack)
     canvas->set_hexpand(true);
 
     m_GestureDrag = Gtk::GestureDrag::create();
-    m_GestureDrag->set_propagation_phase(Gtk::PropagationPhase::BUBBLE);
+    m_GestureDrag->set_propagation_phase(Gtk::PropagationPhase::CAPTURE);
     m_GestureDrag->signal_drag_begin().connect(sigc::mem_fun(*this, &ChipArea::on_my_drag_begin));
     m_GestureDrag->signal_drag_end().connect(sigc::mem_fun(*this, &ChipArea::on_my_drag_end));
     m_GestureDrag->signal_drag_update().connect(sigc::mem_fun(*this, &ChipArea::on_my_drag_update));
@@ -79,14 +80,20 @@ ChipArea::ChipArea(ScreenStack *stack)
 
     create_chip(0);
 
-    // chipSelector
-    chipSelector = Gtk::manage(new ChipSelectorUI());
+    // chipSelector UI
+    ActionMenu = new ChipSelectorMenu(width,height);
+    chipSelector = Gtk::manage(new ChipSelectorUI(ActionMenu));
+    ActionMenu->hide();
+
     chipSelector->add_css_class({"chip-selector"});
     container->attach(*chipSelector, 0, 3, 1, 1);
 
-    // add container to the
+    overlay->add_overlay(*ActionMenu);
+
     wrapper->append(*container);
-    set_child(*wrapper);
+    overlay->set_child(*wrapper);
+    set_child(*overlay);
+
 }
 
 void ChipArea::on_my_pressed(int n_press, double x, double y){
@@ -347,17 +354,18 @@ void ChipArea::draw_on_canvas(const Cairo::RefPtr<Cairo::Context> &cr,
     }
 }
 
-ChipSelectorUI::ChipSelectorUI()
+ChipSelectorUI::ChipSelectorUI(ChipSelectorMenu *menu)
 {
     set_css_classes({"chip-selector"});
     set_orientation(Gtk::Orientation::HORIZONTAL);
     set_spacing(0);
 
-    menu = Gtk::manage(new Gtk::Button());
-    menu->set_label("Menu");
-    menu->set_size_request(50, 50);
-    menu->set_css_classes({"chip-menu-btn", "chip-btn"});
-    append(*menu);
+    menu_btn = Gtk::manage(new Gtk::Button());
+    menu_btn->set_label("MENU");
+    menu_btn->set_size_request(100, 50);
+    menu_btn->set_css_classes({"chip-menu-btn", "chip-btn"});
+    menu_btn->signal_clicked().connect(sigc::mem_fun(*menu, ChipSelectorMenu::show));
+    append(*menu_btn);
 
     for (int i = 0; i < 5; i++)
     {
@@ -368,7 +376,7 @@ ChipSelectorUI::ChipSelectorUI()
         // chips[i]->signal_clicked().connect(sigc::bind<int>(sigc::mem_fun(*this, &ChipSelectorUI::on_chip_selected), i));
         append(*chips[i]);
     }
-}
+};
 
 void ChipSelectorUI::on_chip_selected(int index)
 {
@@ -708,4 +716,43 @@ void GlobalInputPin::bindTo(InputPin &inputPin)
 
 bool GlobalInputPin::IsToggleBtnInside(double mouseX, double mouseY){
     return mouseX >= boundingBox->x && mouseX <= boundingBox->x + boundingBox->width && mouseY >= boundingBox->y && mouseY <= boundingBox->y + boundingBox->height;
+}
+
+ChipSelectorMenu::ChipSelectorMenu(int width, int height)
+{
+    // set_css_classes({"action-menu-big-box"});
+    Gtk::Fixed *ActionMenuFixed = Gtk::manage(new Gtk::Fixed());
+    
+    ActionMenuFrame = Gtk::manage(new Gtk::Frame);
+    // ActionMenuFrame->set_size_request(200,200);
+
+    Gtk::Box *ActionBox = Gtk::manage(new Gtk::Box());
+    ActionBox->set_orientation(Gtk::Orientation::VERTICAL);
+    ActionBox->set_css_classes({"action-menu-area"});
+
+    Gtk::Button *quit = Gtk::manage(new Gtk::Button());
+    quit->set_css_classes({"action-menu-btn"});
+    quit->set_size_request(300,50);
+    quit->set_label("QUIT");
+
+    Gtk::Button *library = Gtk::manage(new Gtk::Button());
+    library->set_size_request(300,50);
+    library->set_css_classes({"action-menu-btn"});
+    library->set_label("LIBRARY");
+
+    Gtk::Button *save = Gtk::manage(new Gtk::Button());
+    save->set_css_classes({"action-menu-btn"});
+    save->set_size_request(300,50);
+    save->set_label("SAVE");
+
+
+    ActionBox->append(*quit);
+    ActionBox->append(*library);
+    ActionBox->append(*save);
+
+    ActionMenuFrame->set_child(*ActionBox);
+    ActionMenuFixed->put(*ActionMenuFrame, 0,height-150-50-91);
+    append(*ActionMenuFixed);
+    
+    // append(*ActionMenuFrame);
 }
