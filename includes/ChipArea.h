@@ -12,62 +12,67 @@ class OutputPin;
 class InputPin;
 class GlobalInputPin;
 class GlobalOutputPin;
+class ChipSelectorMenu;
 
 class ChipArea : public Gtk::Frame
 {
 public:
-  ChipArea(ScreenStack *stack);
-  Gtk::Box *chipSelector;
-  Gtk::Box *creationArea;
-  Gtk::Grid *container;
-  ScreenStack *stack;
-  Gtk::DrawingArea *canvas;
-  
-  std::vector<Chip> *chips;
-  Chip *draggedChip;
-  void run();
+    ChipArea(ScreenStack *stack);
+    Gtk::Box *chipSelector;
+    Gtk::Box *creationArea;
+    Gtk::Grid *container;
+    ScreenStack *stack;
+    Gtk::DrawingArea *canvas;
 
-//   GlobalInputPin *draggedGlobalInputPin;
-//   GlobalOutputPin *draggedGlobalOutputPin;
-// it's vector
-   std::vector<GlobalInputPin *> *globalInputPins;
-   std::vector<GlobalOutputPin *> *globalOutputPins;
+    Gtk::Overlay *overlay;
 
-  OutputPin *draggedOutputPin;
-  InputPin *draggedInputPin;
-    
+    std::vector<Chip> *chips;
+    Chip *draggedChip;
+    void run();
 
-  Glib::RefPtr<Gtk::GestureDrag> m_GestureDrag;
-  Glib::RefPtr<Gtk::GestureClick> m_GestureClick;
+    //   GlobalInputPin *draggedGlobalInputPin;
+    //   GlobalOutputPin *draggedGlobalOutputPin;
+    // it's vector
+    std::vector<GlobalInputPin *> *globalInputPins;
+    std::vector<GlobalOutputPin *> *globalOutputPins;
 
+    OutputPin *draggedOutputPin;
+    InputPin *draggedInputPin;
 
+    ChipSelectorMenu *ActionMenu;
 
-  void on_my_drag_begin(double start_x, double start_y);
-  void on_my_drag_end(double offset_x, double offset_y);
-  void on_my_drag_update(double offset_x, double offset_y);
+    Glib::RefPtr<Gtk::GestureDrag> m_GestureDrag;
+    Glib::RefPtr<Gtk::GestureClick> m_GestureClick;
 
-  void on_my_pressed(int n_press, double x, double y);
+    void on_my_drag_begin(double start_x, double start_y);
+    void on_my_drag_end(double offset_x, double offset_y);
+    void on_my_drag_update(double offset_x, double offset_y);
 
+    void on_my_pressed(int n_press, double x, double y);
 
+    void draw_on_canvas(const Cairo::RefPtr<Cairo::Context> &cr,
+                        int width, int height);
 
-  void draw_on_canvas(const Cairo::RefPtr<Cairo::Context>& cr,
-  int width, int height);
-
-  void clear_canvas(const Cairo::RefPtr<Cairo::Context>& cr);
-  void create_chip(int index);
+    void clear_canvas(const Cairo::RefPtr<Cairo::Context> &cr);
+    void create_chip(int index);
 };
 
-
-class ChipSelectorUI : public Gtk::Box{
+class ChipSelectorUI : public Gtk::Box
+{
 public:
-    ChipSelectorUI();
+    ChipSelectorUI(ChipSelectorMenu *menu);
+    ChipSelectorMenu *menu;
     Gtk::Button *chips[5];
-    Gtk::Button *menu;
+    Gtk::Button *menu_btn;
+    int test;
     int selected_chip = -1;
+
+    void on_menu_clicked(ChipSelectorMenu &menu);
     void on_chip_selected(int index);
 };
 
-struct ChipBoundingBox{
+struct ChipBoundingBox
+{
     int width;
     int height;
     int x;
@@ -78,29 +83,31 @@ struct ChipBoundingBox{
 
 #include "ChipArea.h" // Add this line
 
-void clear_canvas(const Cairo::RefPtr<Cairo::Context>& cr);
+void clear_canvas(const Cairo::RefPtr<Cairo::Context> &cr);
 
-class Bind {
+class Bind
+{
 public:
-    Bind(InputPin &input);  // Accept a reference to InputPin
+    Bind(InputPin &input); // Accept a reference to InputPin
     void printConnection();
-    InputPin &input;  // Store input as a reference
+    InputPin &input; // Store input as a reference
 };
 
-class BindToGlobalOutPut {
+class BindToGlobalOutPut
+{
 public:
-    BindToGlobalOutPut(GlobalOutputPin &output);  // Accept a reference to InputPin
-    GlobalOutputPin &output;  // Store input as a reference
+    BindToGlobalOutPut(GlobalOutputPin &output); // Accept a reference to InputPin
+    GlobalOutputPin &output;                     // Store input as a reference
 };
 
-struct Cord{
+struct Cord
+{
     int x;
     int y;
 };
 
-
-
-class Pin {
+class Pin
+{
 public:
     Pin(std::string name, int index);
     std::string name;
@@ -117,17 +124,19 @@ public:
     int state = 0;
 };
 
-class InputPin : public Pin {
+class InputPin : public Pin
+{
 public:
-    InputPin(std::string name, int index) : Pin(name, index) {};
+    InputPin(std::string name, int index) : Pin(name, index){};
 };
 
-class OutputPin : public Pin {
+class OutputPin : public Pin
+{
 public:
-    OutputPin(std::string name, int index) : Pin(name, index) {
+    OutputPin(std::string name, int index) : Pin(name, index)
+    {
         binds = new std::vector<Bind>();
         bindsToGlobalOutput = new std::vector<BindToGlobalOutPut>();
-
     }
     // bind should be array
     std::vector<Bind> *binds;
@@ -135,7 +144,8 @@ public:
     void bindTo(InputPin &input);
     void bindToGlobalOutput(GlobalOutputPin &output);
 };
-class ChipStructure{
+class ChipStructure
+{
 public:
     ChipStructure(ChipBoundingBox *boundingBox);
     ChipBoundingBox *boundingBox;
@@ -143,42 +153,47 @@ public:
     void setLoc(int x, int y);
 };
 
-struct MouseOffset {
+struct MouseOffset
+{
     double x;
     double y;
 };
 
-enum ChipType{
+enum ChipType
+{
     AND,
     NOT,
     CUSTOM
 };
 
-class Chip{
-  public:
-  Chip(ChipStructure *structure, std::vector<InputPin *> inputPins, std::vector<OutputPin *> outputPins, std::string name);
+class Chip
+{
+public:
+    Chip(ChipStructure *structure, std::vector<InputPin *> inputPins, std::vector<OutputPin *> outputPins, std::string name);
 
-  ChipStructure *structure;
-  std::vector<InputPin *> inputPins;
-  std::vector<OutputPin *> outputPins;
-  std::string name;
-  void draw(const Cairo::RefPtr<Cairo::Context>& cr);
-  MouseOffset getMouseOffset(int x, int y);
-  bool isMouseInside(int x, int y);
-  bool isDragging = false;
-  ChipType type;
-  void addInputPin(InputPin *inputPin);
-  void addOutputPin(OutputPin *outputPin);
-  void run();
-  void setChipType(ChipType type){
+    ChipStructure *structure;
+    std::vector<InputPin *> inputPins;
+    std::vector<OutputPin *> outputPins;
+    std::string name;
+    void draw(const Cairo::RefPtr<Cairo::Context> &cr);
+    MouseOffset getMouseOffset(int x, int y);
+    bool isMouseInside(int x, int y);
+    bool isDragging = false;
+    ChipType type;
+    void addInputPin(InputPin *inputPin);
+    void addOutputPin(OutputPin *outputPin);
+    void run();
+    void setChipType(ChipType type)
+    {
         this->type = type;
-  }
+    }
 };
 
-
-class GlobalInputPin : public Pin{
+class GlobalInputPin : public Pin
+{
 public:
-    GlobalInputPin(int index, int y): Pin("Input", index){
+    GlobalInputPin(int index, int y) : Pin("Input", index)
+    {
         this->y = y;
         binds = new std::vector<Bind>();
     }
@@ -189,12 +204,13 @@ public:
     int state = 0;
     int radius = 20;
     ChipBoundingBox *boundingBox;
-    
 };
 
-class GlobalOutputPin : public Pin{
+class GlobalOutputPin : public Pin
+{
 public:
-    GlobalOutputPin(int index, int y): Pin("Output", index){
+    GlobalOutputPin(int index, int y) : Pin("Output", index)
+    {
         this->y = y;
     }
     int y;
@@ -202,7 +218,11 @@ public:
     int radius = 20;
 };
 
-
-
+class ChipSelectorMenu : public Gtk::Box
+{
+public:
+    ChipSelectorMenu(int width, int height);
+    Gtk::Frame *ActionMenuFrame;
+};
 
 #endif
