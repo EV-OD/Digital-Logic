@@ -35,8 +35,8 @@ ScreenStack::ScreenStack()
   Dframe = new Dialog();
 
 
-  overlay.add_overlay(*Dframe);
-  Dframe->show();
+  // overlay.add_overlay(*Dframe);
+  // Dframe->show();
 
   
   // fixed->put(*overlay_box,0,0);
