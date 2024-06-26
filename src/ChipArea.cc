@@ -46,6 +46,11 @@ ChipArea::ChipArea(ScreenStack *stack)
     m_GestureDrag->signal_drag_update().connect(sigc::mem_fun(*this, &ChipArea::on_my_drag_update));
     add_controller(m_GestureDrag);
 
+    m_GestureClick = Gtk::GestureClick::create();
+    m_GestureClick->set_propagation_phase(Gtk::PropagationPhase::BUBBLE);
+    m_GestureClick->signal_pressed().connect(sigc::mem_fun(*this, &ChipArea::on_my_pressed));
+    add_controller(m_GestureClick);
+
     // connect it with canvas
 
     // now call the function to draw the chip
@@ -85,7 +90,14 @@ ChipArea::ChipArea(ScreenStack *stack)
 }
 
 void ChipArea::on_my_pressed(int n_press, double x, double y){
+    std::cout << "checking" << std::endl;
+    for(int i = 0;i<globalInputPins->size();i++){
 
+        if(globalInputPins->at(i)->IsToggleBtnInside(x - margin, y - margin)){
+            globalInputPins->at(i)->state = !globalInputPins->at(i)->state;
+            run();
+        }
+    }
 }
 
 void ChipArea::on_my_drag_begin(double start_x, double start_y)
@@ -692,4 +704,8 @@ void GlobalInputPin::bindTo(InputPin &inputPin)
 {
     Bind bind(inputPin);
     binds->push_back(bind);
+}
+
+bool GlobalInputPin::IsToggleBtnInside(double mouseX, double mouseY){
+    return mouseX >= boundingBox->x && mouseX <= boundingBox->x + boundingBox->width && mouseY >= boundingBox->y && mouseY <= boundingBox->y + boundingBox->height;
 }

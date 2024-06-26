@@ -189,6 +189,7 @@ public:
     int state = 0;
     int radius = 20;
     ChipBoundingBox *boundingBox;
+    bool IsToggleBtnInside(double mouseX, double mouseY);
     
 };
 
