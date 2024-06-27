@@ -67,7 +67,6 @@ public:
     int test;
     int selected_chip = -1;
 
-    void on_menu_clicked(ChipSelectorMenu &menu);
     void on_chip_selected(int index);
 };
 
@@ -223,8 +222,13 @@ public:
 class ChipSelectorMenu : public Gtk::Box
 {
 public:
+    bool visible = false;
     ChipSelectorMenu(int width, int height);
     Gtk::Frame *ActionMenuFrame;
+    Glib::RefPtr<Gtk::GestureClick> m_GestureClick;
+
+    void hideMenu(int, int, int);
+    void showMenu();
 };
 
 #endif
