@@ -83,7 +83,10 @@ ChipArea::ChipArea(ScreenStack *stack)
     // chipSelector UI
     ActionMenu = new ChipSelectorMenu(width,height);
     chipSelector = Gtk::manage(new ChipSelectorUI(ActionMenu));
+
+
     ActionMenu->hide();
+    ActionMenu->visible = false;
 
     chipSelector->add_css_class({"chip-selector"});
     container->attach(*chipSelector, 0, 3, 1, 1);
@@ -364,7 +367,7 @@ ChipSelectorUI::ChipSelectorUI(ChipSelectorMenu *menu)
     menu_btn->set_label("MENU");
     menu_btn->set_size_request(100, 50);
     menu_btn->set_css_classes({"chip-menu-btn", "chip-btn"});
-    menu_btn->signal_clicked().connect(sigc::mem_fun(*menu, ChipSelectorMenu::show));
+    menu_btn->signal_clicked().connect(sigc::mem_fun(*menu, ChipSelectorMenu::showMenu));
     append(*menu_btn);
 
     for (int i = 0; i < 5; i++)
@@ -753,6 +756,22 @@ ChipSelectorMenu::ChipSelectorMenu(int width, int height)
     ActionMenuFrame->set_child(*ActionBox);
     ActionMenuFixed->put(*ActionMenuFrame, 0,height-150-50-91);
     append(*ActionMenuFixed);
+
+    this->m_GestureClick = Gtk::GestureClick::create();
+    this->m_GestureClick->set_propagation_phase(Gtk::PropagationPhase::CAPTURE);
+    this->m_GestureClick->signal_pressed().connect(sigc::mem_fun(*this, ChipSelectorMenu::hideMenu));
+    add_controller(this->m_GestureClick);
     
-    // append(*ActionMenuFrame);
+}
+
+void ChipSelectorMenu::hideMenu(int ,int ,int)
+{
+    hide();
+    visible =false;
+}
+
+void ChipSelectorMenu::showMenu()
+{
+    show();
+    visible =true;
 }
