@@ -12,7 +12,7 @@
 ScreenStack::ScreenStack()
 {
   stack = Gtk::manage(new Gtk::Stack());
-  stack->set_transition_type(Gtk::StackTransitionType::SLIDE_LEFT);
+  stack->set_transition_type(Gtk::StackTransitionType::NONE);
   stack->set_transition_duration(800);
   stack->set_css_classes({"screen-stack"});
 
@@ -50,13 +50,14 @@ void ScreenStack::show_splash()
   stack->set_visible_child(splash);
 }
 
-void ScreenStack::show_menu()
+void ScreenStack::show_home_menu()
 {
   stack->set_visible_child(*menu);
 }
 
 void ScreenStack::show_chip_area()
 {
+  stack->set_transition_type(Gtk::StackTransitionType::SLIDE_LEFT);
   stack->set_visible_child(*chipArea);
 }
 

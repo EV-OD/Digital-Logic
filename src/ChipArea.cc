@@ -81,7 +81,7 @@ ChipArea::ChipArea(ScreenStack *stack)
     create_chip(0);
 
     // chipSelector UI
-    ActionMenu = new ChipSelectorMenu(width,height);
+    ActionMenu = new ChipSelectorMenu(width,height, stack);
     chipSelector = Gtk::manage(new ChipSelectorUI(ActionMenu));
 
 
@@ -345,7 +345,6 @@ void ChipArea::draw_on_canvas(const Cairo::RefPtr<Cairo::Context> &cr,
                 cr->set_source_rgb(20 / 255.0, 20 / 255.0, 20 / 255.0);
             }
             cr->set_line_width(4);
-
             cr->move_to(globalInputPins->at(i)->radius + globalPinGap, globalInputPins->at(i)->y);
             cr->line_to(globalInputPins->at(i)->binds->at(j).input.x, globalInputPins->at(i)->binds->at(j).input.y);
             cr->stroke();
@@ -376,7 +375,6 @@ ChipSelectorUI::ChipSelectorUI(ChipSelectorMenu *menu)
         chips[i]->set_label("Chip " + std::to_string(i));
         chips[i]->set_size_request(50, 50);
         chips[i]->set_css_classes({"chip-btn"});
-        // chips[i]->signal_clicked().connect(sigc::bind<int>(sigc::mem_fun(*this, &ChipSelectorUI::on_chip_selected), i));
         append(*chips[i]);
     }
 };
@@ -721,8 +719,9 @@ bool GlobalInputPin::IsToggleBtnInside(double mouseX, double mouseY){
     return mouseX >= boundingBox->x && mouseX <= boundingBox->x + boundingBox->width && mouseY >= boundingBox->y && mouseY <= boundingBox->y + boundingBox->height;
 }
 
-ChipSelectorMenu::ChipSelectorMenu(int width, int height)
+ChipSelectorMenu::ChipSelectorMenu(int width, int height, ScreenStack *scrn_stack)
 {
+    this->scrn_stack = scrn_stack;
     // set_css_classes({"action-menu-big-box"});
     Gtk::Fixed *ActionMenuFixed = Gtk::manage(new Gtk::Fixed());
     
@@ -734,6 +733,8 @@ ChipSelectorMenu::ChipSelectorMenu(int width, int height)
     ActionBox->set_css_classes({"action-menu-area"});
 
     Gtk::Button *quit = Gtk::manage(new Gtk::Button());
+    quit->signal_clicked().connect(sigc::mem_fun(*this, ChipSelectorMenu::quit));
+
     quit->set_css_classes({"action-menu-btn"});
     quit->set_size_request(300,50);
     quit->set_label("QUIT");
@@ -758,7 +759,7 @@ ChipSelectorMenu::ChipSelectorMenu(int width, int height)
     append(*ActionMenuFixed);
 
     this->m_GestureClick = Gtk::GestureClick::create();
-    this->m_GestureClick->set_propagation_phase(Gtk::PropagationPhase::CAPTURE);
+    this->m_GestureClick->set_propagation_phase(Gtk::PropagationPhase::TARGET);
     this->m_GestureClick->signal_pressed().connect(sigc::mem_fun(*this, ChipSelectorMenu::hideMenu));
     add_controller(this->m_GestureClick);
     
@@ -774,4 +775,10 @@ void ChipSelectorMenu::showMenu()
 {
     show();
     visible =true;
+}
+
+void ChipSelectorMenu::quit()
+{
+    scrn_stack->stack->set_transition_type(Gtk::StackTransitionType::SLIDE_RIGHT);
+    scrn_stack->show_home_menu();
 }

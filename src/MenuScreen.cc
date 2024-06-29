@@ -13,6 +13,7 @@ void print_hello()
 MenuScreen::MenuScreen(ScreenStack *stack)
 {
   this->stack = stack;
+
   std::cout << "[initial stack]" << this->stack << std::endl;
   // wrapper
   Gtk::Box *box = Gtk::manage(new Gtk::Box(Gtk::Orientation::VERTICAL, 1));

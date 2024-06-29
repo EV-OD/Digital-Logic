@@ -222,13 +222,16 @@ public:
 class ChipSelectorMenu : public Gtk::Box
 {
 public:
+    ChipSelectorMenu(int width, int height, ScreenStack *scrn_stack);
     bool visible = false;
-    ChipSelectorMenu(int width, int height);
+    ScreenStack *scrn_stack;
     Gtk::Frame *ActionMenuFrame;
     Glib::RefPtr<Gtk::GestureClick> m_GestureClick;
 
     void hideMenu(int, int, int);
     void showMenu();
+    void quit();
 };
+
 
 #endif

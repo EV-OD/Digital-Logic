@@ -13,7 +13,6 @@ MyWindow::MyWindow()
   set_default_size(width, height);
 
   screenStack = new ScreenStack();
-  // screenStack->show_splash();
   screenStack->show_splash();
   screenStack->set_vexpand(true);
   screenStack->set_hexpand(true);
@@ -24,11 +23,12 @@ MyWindow::MyWindow()
   css->load_from_path("style.css");
   Gtk::StyleContext::add_provider_for_display(Gdk::Display::get_default(), css, GTK_STYLE_PROVIDER_PRIORITY_USER);
   // after some delay show the menu
-  Glib::signal_timeout().connect(sigc::mem_fun(*this, &MyWindow::on_timeout), 4000);
+  screenStack->stack->set_transition_type(Gtk::StackTransitionType::CROSSFADE);
+  Glib::signal_timeout().connect(sigc::mem_fun(*this, &MyWindow::on_timeout), 8000);
 }
 
 bool MyWindow::on_timeout()
 {
-  screenStack->show_menu();
+  screenStack->show_home_menu();
   return false;
 }
