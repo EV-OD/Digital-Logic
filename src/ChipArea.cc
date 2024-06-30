@@ -179,9 +179,6 @@ ChipArea::ChipArea(ScreenStack *stack)
 void ChipArea::on_my_motion(double x, double y)
 {
     mousePos = CordDouble{x - margin, y - margin};
-    //functions to be executed each mouse changes;
-    
-    //
     if (draggedWire != nullptr)
     {
         canvas->queue_draw();
