@@ -191,8 +191,10 @@ void ChipArea::clear_actions()
     draggedOutputPin = nullptr;
     draggedGlobalOutputPin = nullptr;
     draggedInputPin = nullptr;
-    draggedWire->breakPoints->clear();
-    draggedWire = nullptr;
+    if(draggedWire != nullptr){
+        draggedWire->breakPoints->clear();
+        draggedWire = nullptr;
+    }
     canvas->queue_draw();
 }
 
