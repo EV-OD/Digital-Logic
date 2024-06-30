@@ -21,7 +21,7 @@ public:
   MenuScreen *menu;
   ChipArea *chipArea;
   void show_splash();
-  void show_menu();
+  void show_home_menu();
   void show_chip_area();
   Gtk::Stack *stack;
   Dialog *Dframe;
