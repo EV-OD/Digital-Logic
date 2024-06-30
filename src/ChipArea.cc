@@ -8,6 +8,74 @@
 #define margin 30
 #define globalPinGap 40
 
+void draw_wire_between(Bind *bind, const Cairo::RefPtr<Cairo::Context> &cr)
+{
+    // bind->wire
+    std::cout << "Wire: " << bind->wire << std::endl;
+    if (bind->wire != nullptr)
+    {
+        if (bind->wire->breakPoints->size() != 0)
+        {
+            std::cout << "Break Points: " << bind->wire->breakPoints->size() << std::endl;
+            if (bind->gInput != nullptr)
+            {
+                cr->move_to(bind->gInput->x, bind->gInput->y);
+            }
+            else if (bind->output != nullptr)
+            {
+                cr->move_to(bind->output->x, bind->output->y);
+            }
+            cr->line_to(bind->wire->breakPoints->at(1).x, bind->wire->breakPoints->at(1).y);
+            cr->stroke();
+            for (int i = 1; i < bind->wire->breakPoints->size() - 2; i++)
+            {
+                cr->move_to(bind->wire->breakPoints->at(i).x, bind->wire->breakPoints->at(i).y);
+                cr->line_to(bind->wire->breakPoints->at(i + 1).x, bind->wire->breakPoints->at(i + 1).y);
+                cr->stroke();
+            }
+            // input pin line drawing
+            cr->move_to(bind->input.x, bind->input.y);
+            int index = bind->wire->breakPoints->size() - 2;
+            cr->line_to(bind->wire->breakPoints->at(index).x, bind->wire->breakPoints->at(index).y);
+            cr->stroke();
+        }
+    }
+}
+
+void draw_wire_between(BindToGlobalOutPut *bind, const Cairo::RefPtr<Cairo::Context> &cr)
+{
+    // bind->wire
+    std::cout << "Wire: " << bind->wire << std::endl;
+    if (bind->wire != nullptr)
+    {
+        if (bind->wire->breakPoints->size() != 0)
+        {
+            if (bind->gInput != nullptr)
+            {
+                cr->move_to(bind->gInput->x, bind->gInput->y);
+            }
+            else if (bind->localOutput != nullptr)
+            {
+                cr->move_to(bind->localOutput->x, bind->localOutput->y);
+            }
+            cr->line_to(bind->wire->breakPoints->at(1).x, bind->wire->breakPoints->at(1).y);
+            cr->stroke();
+            std::cout << "Break Points: " << bind->wire->breakPoints->size() << std::endl;
+            for (int i = 1; i < bind->wire->breakPoints->size() - 2; i++)
+            {
+                cr->move_to(bind->wire->breakPoints->at(i).x, bind->wire->breakPoints->at(i).y);
+                cr->line_to(bind->wire->breakPoints->at(i + 1).x, bind->wire->breakPoints->at(i + 1).y);
+                cr->stroke();
+            }
+            // GlobalOutputPin line drawing
+            cr->move_to(bind->output.x, bind->output.y);
+            int index = bind->wire->breakPoints->size() - 2;
+            cr->line_to(bind->wire->breakPoints->at(index).x, bind->wire->breakPoints->at(index).y);
+            cr->stroke();
+        }
+    }
+}
+
 ChipArea::ChipArea(ScreenStack *stack)
 {
     this->stack = stack;
@@ -36,6 +104,17 @@ ChipArea::ChipArea(ScreenStack *stack)
     // canvas
     canvas = Gtk::manage(new Gtk::DrawingArea());
     canvas->add_css_class({"chip-canvas"});
+
+    auto motion_controller = Gtk::EventControllerMotion::create();
+    motion_controller->signal_motion().connect(sigc::mem_fun(*this, &ChipArea::on_my_motion));
+
+    add_controller(motion_controller);
+
+    auto key_controller = Gtk::EventControllerKey::create();
+    key_controller->signal_key_pressed().connect(sigc::mem_fun(*this, &ChipArea::on_my_key_pressed), false);
+
+    add_controller(key_controller);
+
     creationArea->append(*canvas);
     canvas->set_vexpand(true);
     canvas->set_hexpand(true);
@@ -81,9 +160,8 @@ ChipArea::ChipArea(ScreenStack *stack)
     create_chip(0);
 
     // chipSelector UI
-    ActionMenu = new ChipSelectorMenu(width,height);
+    ActionMenu = new ChipSelectorMenu(width, height);
     chipSelector = Gtk::manage(new ChipSelectorUI(ActionMenu));
-
 
     ActionMenu->hide();
     ActionMenu->visible = false;
@@ -96,18 +174,351 @@ ChipArea::ChipArea(ScreenStack *stack)
     wrapper->append(*container);
     overlay->set_child(*wrapper);
     set_child(*overlay);
-
 }
 
-void ChipArea::on_my_pressed(int n_press, double x, double y){
-    std::cout << "checking" << std::endl;
-    for(int i = 0;i<globalInputPins->size();i++){
+void ChipArea::on_my_motion(double x, double y)
+{
+    mousePos = CordDouble{x - margin, y - margin};
+    if (draggedWire != nullptr)
+    {
+        canvas->queue_draw();
+    }
+}
 
-        if(globalInputPins->at(i)->IsToggleBtnInside(x - margin, y - margin)){
+void ChipArea::clear_actions()
+{
+    draggedGlobalInputPin = nullptr;
+    draggedOutputPin = nullptr;
+    draggedGlobalOutputPin = nullptr;
+    draggedInputPin = nullptr;
+    draggedWire->breakPoints->clear();
+    draggedWire = nullptr;
+    canvas->queue_draw();
+}
+
+bool ChipArea::on_my_key_pressed(guint keyval, guint /*keycode*/, Gdk::ModifierType /*state*/)
+{
+    if (keyval == GDK_KEY_Escape)
+    {
+        clear_actions();
+        return true; // Event has been handled
+    }
+    return false; // Event has not been handled
+}
+
+void ChipArea::on_my_pressed(int n_press, double x, double y)
+{
+    if (draggedGlobalInputPin != nullptr)
+    {
+        if (draggedWire != nullptr)
+        {
+            bool isPinFound = false;
+            // check global output pin
+            for (int i = 0; i < globalOutputPins->size(); i++)
+            {
+                if (globalOutputPins->at(i)->isInside(x - margin, y - margin))
+                {
+                    // draggedGlobalInputPin->bindToGlobalOutput(*globalOutputPins->at(i));
+                    // Bind bind(inputPin);
+                    // bind.gInput = this;
+                    // binds->push_back(bind);
+
+                    BindToGlobalOutPut *bind = new BindToGlobalOutPut((*globalOutputPins->at(i)));
+                    bind->gInput = draggedGlobalInputPin;
+                    draggedGlobalInputPin->gbinds->push_back(bind);
+                    isPinFound = true;
+                    CordDouble c1 = CordDouble{globalOutputPins->at(i)->x, globalOutputPins->at(i)->y};
+                    draggedWire->breakPoints->push_back(c1);
+                    Wire *wire = new Wire();
+                    // wire->breakPoints = draggedWire->breakPoints;
+                    for (int i = 0; i < draggedWire->breakPoints->size(); i++)
+                    {
+                        wire->breakPoints->push_back(draggedWire->breakPoints->at(i));
+                    }
+                    bind->wire = wire;
+                    globalOutputPins->at(i)->bindToGlobalOutput = bind;
+                    clear_actions();
+                    break;
+                }
+            }
+
+            // check input pin
+            for (int i = 0; i < chips->size(); i++)
+            {
+                for (int j = 0; j < chips->at(i).inputPins.size(); j++)
+                {
+                    if (chips->at(i).inputPins[j]->isInside(x - margin, y - margin))
+                    {
+                        Bind *bind = new Bind(*chips->at(i).inputPins[j]);
+                        bind->gInput = draggedGlobalInputPin;
+                        draggedGlobalInputPin->binds->push_back(bind);
+                        isPinFound = true;
+                        CordDouble c1 = CordDouble{chips->at(i).inputPins[j]->x, chips->at(i).inputPins[j]->y};
+                        draggedWire->breakPoints->push_back(c1);
+                        Wire *wire = new Wire();
+                        for (int i = 0; i < draggedWire->breakPoints->size(); i++)
+                        {
+                            wire->breakPoints->push_back(draggedWire->breakPoints->at(i));
+                        }
+                        bind->wire = wire;
+                        chips->at(i).inputPins[j]->bind = bind;
+                        clear_actions();
+                        break;
+                    }
+                }
+            }
+
+            if (isPinFound == false)
+            {
+                CordDouble c1 = CordDouble{x - margin, y - margin};
+                draggedWire->breakPoints->push_back(c1);
+            }
+        }
+    }
+    else if (draggedOutputPin != nullptr)
+    {
+        if (draggedWire != nullptr)
+        {
+            bool isPinFound = false;
+            // check global output pin
+            for (int i = 0; i < globalOutputPins->size(); i++)
+            {
+                if (globalOutputPins->at(i)->isInside(x - margin, y - margin))
+                {
+                    draggedOutputPin->bindToGlobalOutput(*globalOutputPins->at(i));
+                    isPinFound = true;
+                    CordDouble c1 = CordDouble{globalOutputPins->at(i)->x, globalOutputPins->at(i)->y};
+                    draggedWire->breakPoints->push_back(c1);
+                    Wire *wire = new Wire();
+                    for (int i = 0; i < draggedWire->breakPoints->size(); i++)
+                    {
+                        wire->breakPoints->push_back(draggedWire->breakPoints->at(i));
+                    }
+                    draggedOutputPin->bindsToGlobalOutput->at(draggedOutputPin->bindsToGlobalOutput->size() - 1)->wire = wire;
+                    clear_actions();
+                    break;
+                }
+            }
+
+            // check input pins
+            for (int i = 0; i < chips->size(); i++)
+            {
+                for (int j = 0; j < chips->at(i).inputPins.size(); j++)
+                {
+                    if (chips->at(i).inputPins[j]->isInside(x - margin, y - margin))
+                    {
+                        draggedOutputPin->bindTo(*chips->at(i).inputPins[j]);
+                        isPinFound = true;
+                        CordDouble c1 = CordDouble{chips->at(i).inputPins[j]->x, chips->at(i).inputPins[j]->y};
+                        draggedWire->breakPoints->push_back(c1);
+                        Wire *wire = new Wire();
+                        for (int i = 0; i < draggedWire->breakPoints->size(); i++)
+                        {
+                            wire->breakPoints->push_back(draggedWire->breakPoints->at(i));
+                        }
+                        draggedOutputPin->binds->at(draggedOutputPin->binds->size() - 1)->wire = wire;
+                        clear_actions();
+                        break;
+                    }
+                }
+            }
+            if (isPinFound == false)
+            {
+                CordDouble c1 = CordDouble{x - margin, y - margin};
+                draggedWire->breakPoints->push_back(c1);
+            }
+        }
+    }
+    else if (draggedGlobalOutputPin != nullptr)
+    {
+        if (draggedWire != nullptr)
+        {
+            bool isPinFound = false;
+            // check global input pins
+            for (int i = 0; i < globalInputPins->size(); i++)
+            {
+                if (globalInputPins->at(i)->isInside(x - margin, y - margin))
+                {
+                    BindToGlobalOutPut *bind = new BindToGlobalOutPut(*draggedGlobalOutputPin);
+                    bind->gInput = globalInputPins->at(i);
+                    globalInputPins->at(i)->gbinds->push_back(bind);
+                    draggedGlobalOutputPin->bindToGlobalOutput = bind;
+                    isPinFound = true;
+                    CordDouble c1 = CordDouble{globalInputPins->at(i)->x, globalInputPins->at(i)->y};
+                    draggedWire->breakPoints->push_back(c1);
+                    Wire *wire = new Wire();
+                    for (int i = draggedWire->breakPoints->size() - 1; i >= 0; i--)
+                    {
+                        wire->breakPoints->push_back(draggedWire->breakPoints->at(i));
+                    }
+                    bind->wire = wire;
+                    clear_actions();
+                    break;
+                }
+            }
+
+            // check output pins
+            for (int i = 0; i < chips->size(); i++)
+            {
+                for (int j = 0; j < chips->at(i).outputPins.size(); j++)
+                {
+                    if (chips->at(i).outputPins[j]->isInside(x - margin, y - margin))
+                    {
+                        BindToGlobalOutPut *bind = new BindToGlobalOutPut(*draggedGlobalOutputPin);
+                        bind->localOutput = chips->at(i).outputPins[j];
+                        chips->at(i).outputPins[j]->bindsToGlobalOutput->push_back(bind);
+                        draggedGlobalOutputPin->bindToGlobalOutput = bind;
+                        isPinFound = true;
+                        CordDouble c1 = CordDouble{chips->at(i).outputPins[j]->x, chips->at(i).outputPins[j]->y};
+                        draggedWire->breakPoints->push_back(c1);
+                        Wire *wire = new Wire();
+                        for (int i = draggedWire->breakPoints->size() - 1; i >= 0; i--)
+                        {
+                            wire->breakPoints->push_back(draggedWire->breakPoints->at(i));
+                        }
+                        bind->wire = wire;
+                        clear_actions();
+                        break;
+                    }
+                }
+            }
+
+            if (isPinFound == false)
+            {
+                CordDouble c1 = CordDouble{x - margin, y - margin};
+                draggedWire->breakPoints->push_back(c1);
+            }
+        }
+    }
+    else if (draggedInputPin != nullptr)
+    {
+        if (draggedWire != nullptr)
+        {
+            bool isPinFound = false;
+            // check global input pins
+            for (int i = 0; i < globalInputPins->size(); i++)
+            {
+                if (globalInputPins->at(i)->isInside(x - margin, y - margin))
+                {
+                    globalInputPins->at(i)->bindTo(*draggedInputPin);
+                    isPinFound = true;
+                    CordDouble c1 = CordDouble{globalInputPins->at(i)->x, globalInputPins->at(i)->y};
+                    draggedWire->breakPoints->push_back(c1);
+                    Wire *wire = new Wire();
+                    for (int i = draggedWire->breakPoints->size() - 1; i >= 0; i--)
+                    {
+                        wire->breakPoints->push_back(draggedWire->breakPoints->at(i));
+                    }
+                    globalInputPins->at(i)->binds->at(globalInputPins->at(i)->binds->size() - 1)->wire = wire;
+                    clear_actions();
+                    break;
+                }
+            }
+
+            // check output pins
+            for (int i = 0; i < chips->size(); i++)
+            {
+                for (int j = 0; j < chips->at(i).outputPins.size(); j++)
+                {
+                    if (chips->at(i).outputPins[j]->isInside(x - margin, y - margin))
+                    {
+                        chips->at(i).outputPins[j]->bindTo(*draggedInputPin);
+                        isPinFound = true;
+                        CordDouble c1 = CordDouble{chips->at(i).outputPins[j]->x, chips->at(i).outputPins[j]->y};
+                        draggedWire->breakPoints->push_back(c1);
+                        Wire *wire = new Wire();
+                        for (int i = draggedWire->breakPoints->size() - 1; i >= 0; i--)
+                        {
+                            wire->breakPoints->push_back(draggedWire->breakPoints->at(i));
+                        }
+                        chips->at(i).outputPins[j]->binds->at(chips->at(i).outputPins[j]->binds->size() - 1)->wire = wire;
+                        clear_actions();
+                        break;
+                    }
+                }
+            }
+
+            if (isPinFound == false)
+            {
+                CordDouble c1 = CordDouble{x - margin, y - margin};
+                draggedWire->breakPoints->push_back(c1);
+            }
+        }
+    }
+    else
+    {
+        // first check global input pins
+        for (int i = 0; i < globalInputPins->size(); i++)
+        {
+
+            if (globalInputPins->at(i)->isInside(x - margin, y - margin))
+            {
+                std::cout << "Global Input Pin Found" << std::endl;
+                draggedGlobalInputPin = globalInputPins->at(i);
+                draggedWire = new Wire();
+                draggedWire->breakPoints->push_back(CordDouble{double(draggedGlobalInputPin->x), double(draggedGlobalInputPin->y)});
+                break;
+            }
+        }
+
+        // now check all chips
+        for (int i = 0; i < chips->size(); i++)
+        {
+            // for(int j = 0;j<chips->at(i).inputPins.size();j++){
+            //     if(chips->at(i).inputPins[j]->isInside(x - margin, y - margin)){
+            //         draggedInputPin = chips->at(i).inputPins[j];
+            //         break;
+            //     }
+            // }
+
+            for (int j = 0; j < chips->at(i).outputPins.size(); j++)
+            {
+
+                if (chips->at(i).outputPins[j]->isInside(x - margin, y - margin))
+                {
+                    draggedOutputPin = chips->at(i).outputPins[j];
+                    draggedWire = new Wire();
+                    draggedWire->breakPoints->push_back(CordDouble{double(draggedOutputPin->x), double(draggedOutputPin->y)});
+                    break;
+                }
+            }
+
+            // check input
+            for (int j = 0; j < chips->at(i).inputPins.size(); j++)
+            {
+                if (chips->at(i).inputPins[j]->isInside(x - margin, y - margin))
+                {
+                    draggedInputPin = chips->at(i).inputPins[j];
+                    draggedWire = new Wire();
+                    draggedWire->breakPoints->push_back(CordDouble{double(draggedInputPin->x), double(draggedInputPin->y)});
+                    break;
+                }
+            }
+        }
+
+        // now check global output pins
+        for (int i = 0; i < globalOutputPins->size(); i++)
+        {
+            if (globalOutputPins->at(i)->isInside(x - margin, y - margin))
+            {
+                draggedGlobalOutputPin = globalOutputPins->at(i);
+                draggedWire = new Wire();
+                draggedWire->breakPoints->push_back(CordDouble{double(draggedGlobalOutputPin->x), double(draggedGlobalOutputPin->y)});
+                break;
+            }
+        }
+    }
+
+    for (int i = 0; i < globalInputPins->size(); i++)
+    {
+
+        if (globalInputPins->at(i)->IsToggleBtnInside(x - margin, y - margin))
+        {
             globalInputPins->at(i)->state = !globalInputPins->at(i)->state;
             run();
         }
     }
+    run();
 }
 
 void ChipArea::on_my_drag_begin(double start_x, double start_y)
@@ -200,24 +611,20 @@ void ChipArea::create_chip(int index)
     InputPin *inputPinAND_B = new InputPin("B", 1);
     OutputPin *outputPinAND_Y = new OutputPin("Y", 0);
 
-
-    globalInputPins->at(0)->bindTo(*inputPinAND_A);
-    globalInputPins->at(1)->bindTo(*inputPinAND_B);
+    // globalInputPins->at(0)->bindTo(*inputPinAND_A);
+    // globalInputPins->at(1)->bindTo(*inputPinAND_B);
 
     InputPin *inputPinNOT_A = new InputPin("A", 0);
 
-
-    outputPinAND_Y->bindTo(*inputPinNOT_A);
-
-
+    // outputPinAND_Y->bindTo(*inputPinNOT_A);
 
     // Create NOT gate
     ChipStructure *structureNOT = new ChipStructure(new ChipBoundingBox{100, 100, 400, 60});
     std::vector<InputPin *> inputPins2;
     std::vector<OutputPin *> outputPins2;
 
-    OutputPin *outputPinNOT_Y = new OutputPin("Y", 0);    
-    outputPinNOT_Y->bindToGlobalOutput(*globalOutputPins->at(0));
+    OutputPin *outputPinNOT_Y = new OutputPin("Y", 0);
+    // outputPinNOT_Y->bindToGlobalOutput(*globalOutputPins->at(0));
 
     // Connect the AND output to the NOT input to create NAND
 
@@ -242,26 +649,30 @@ void ChipArea::create_chip(int index)
     canvas->queue_draw();
 }
 
-
 void ChipArea::clear_canvas(const Cairo::RefPtr<Cairo::Context> &cr)
 {
     cr->set_source_rgb(0.0, 0.0, 0.0);
     cr->fill();
 }
 
-void ChipArea::run(){
+void ChipArea::run()
+{
 
     std::vector<Chip *> chips;
 
-    for(int i = 0;i < globalInputPins->size();i++){
-        for(int j = 0;j < globalInputPins->at(i)->binds->size();j++){
-            globalInputPins->at(i)->binds->at(j).input.state = globalInputPins->at(i)->state;
-            if(globalInputPins->at(i)->binds->at(j).input.chip != nullptr){
-                chips.push_back(globalInputPins->at(i)->binds->at(j).input.chip);
+    for (int i = 0; i < globalInputPins->size(); i++)
+    {
+        for (int j = 0; j < globalInputPins->at(i)->binds->size(); j++)
+        {
+            globalInputPins->at(i)->binds->at(j)->input.state = globalInputPins->at(i)->state;
+            if (globalInputPins->at(i)->binds->at(j)->input.chip != nullptr)
+            {
+                chips.push_back(globalInputPins->at(i)->binds->at(j)->input.chip);
             }
         }
     }
-    for(int i = 0;i < chips.size();i++){
+    for (int i = 0; i < chips.size(); i++)
+    {
         chips[i]->run();
     }
 }
@@ -271,18 +682,42 @@ void ChipArea::draw_on_canvas(const Cairo::RefPtr<Cairo::Context> &cr,
 {
     clear_canvas(cr);
 
+    // draw dragged wire
+    if (draggedWire != nullptr)
+    {
+        cr->set_source_rgb(255 / 255.0, 255 / 255.0, 255 / 255.0);
+        cr->set_line_width(4);
+
+        if (draggedWire->breakPoints->size() != 0)
+        {
+            for (int i = 0; i < draggedWire->breakPoints->size() - 1; i++)
+            {
+                cr->move_to(draggedWire->breakPoints->at(i).x, draggedWire->breakPoints->at(i).y);
+                cr->line_to(draggedWire->breakPoints->at(i + 1).x, draggedWire->breakPoints->at(i + 1).y);
+                cr->stroke();
+            }
+            int index = draggedWire->breakPoints->size();
+            cr->move_to(draggedWire->breakPoints->at(index - 1).x, draggedWire->breakPoints->at(index - 1).y);
+            cr->line_to(mousePos.x, mousePos.y);
+            cr->stroke();
+        }
+    }
+
     // global output pins
     for (int i = 0; i < globalOutputPins->size(); i++)
     {
+        globalOutputPins->at(i)->radius = 20;
         cr->set_source_rgb(200 / 255.0, 39 / 255.0, 92 / 255.0);
 
         cr->arc(width - globalOutputPins->at(i)->radius - globalPinGap, globalOutputPins->at(i)->y, globalOutputPins->at(i)->radius, 0, 2 * M_PI);
         cr->fill();
 
-        if(globalOutputPins->at(i)->state == 1){
+        if (globalOutputPins->at(i)->state == 1)
+        {
             cr->set_source_rgb(255 / 255.0, 255 / 255.0, 255 / 255.0);
-
-        } else {
+        }
+        else
+        {
             cr->set_source_rgb(20 / 255.0, 20 / 255.0, 20 / 255.0);
         }
         cr->arc(width - globalOutputPins->at(i)->radius - globalPinGap, globalOutputPins->at(i)->y, globalOutputPins->at(i)->radius / 2, 0, 2 * M_PI);
@@ -290,23 +725,24 @@ void ChipArea::draw_on_canvas(const Cairo::RefPtr<Cairo::Context> &cr,
         globalOutputPins->at(i)->x = width - globalOutputPins->at(i)->radius - globalPinGap;
     }
 
-
-
     for (int i = 0; i < chips->size(); i++)
     {
         (*chips)[i].draw(cr);
     }
-        // global input pins
+    // global input pins
     for (int i = 0; i < globalInputPins->size(); i++)
     {
+        globalInputPins->at(i)->radius = 20;
         cr->set_source_rgb(200 / 255.0, 39 / 255.0, 92 / 255.0);
         cr->arc(globalInputPins->at(i)->radius + globalPinGap, globalInputPins->at(i)->y, globalInputPins->at(i)->radius, 0, 2 * M_PI);
         cr->fill();
 
-        if(globalInputPins->at(i)->state == 1){
+        if (globalInputPins->at(i)->state == 1)
+        {
             cr->set_source_rgb(2550 / 255.0, 255 / 255.0, 255 / 255.0);
-
-        } else {
+        }
+        else
+        {
             cr->set_source_rgb(20 / 255.0, 20 / 255.0, 20 / 255.0);
         }
 
@@ -315,10 +751,12 @@ void ChipArea::draw_on_canvas(const Cairo::RefPtr<Cairo::Context> &cr,
         globalInputPins->at(i)->x = globalInputPins->at(i)->radius + globalPinGap;
 
         // rectange before the global input pin
-        if(globalInputPins->at(i)->state == 1){
+        if (globalInputPins->at(i)->state == 1)
+        {
             cr->set_source_rgb(200 / 255.0, 50 / 255.0, 100 / 255.0);
-        }else{
-            
+        }
+        else
+        {
         }
         int rectangeWidth = 20;
         int rectangeHeight = 20;
@@ -332,25 +770,49 @@ void ChipArea::draw_on_canvas(const Cairo::RefPtr<Cairo::Context> &cr,
         cr->fill();
     }
 
-
     // draw line between GlobalInputPin and input pins
     for (int i = 0; i < globalInputPins->size(); i++)
     {
 
         for (int j = 0; j < globalInputPins->at(i)->binds->size(); j++)
         {
-            if(globalInputPins->at(i)->state == 1){
+            if (globalInputPins->at(i)->state == 1)
+            {
                 cr->set_source_rgb(255 / 255.0, 255 / 255.0, 255 / 255.0);
-            } else {
+            }
+            else
+            {
+                cr->set_source_rgb(20 / 255.0, 20 / 255.0, 20 / 255.0);
+            }
+            cr->set_line_width(4);
+            std::cout << "Drawing Wire" << std::endl;
+            draw_wire_between(globalInputPins->at(i)->binds->at(j), cr);
+
+            // cr->move_to(globalInputPins->at(i)->radius + globalPinGap, globalInputPins->at(i)->y);
+            // cr->line_to(globalInputPins->at(i)->binds->at(j).input.x, globalInputPins->at(i)->binds->at(j).input.y);
+            // cr->stroke();
+        }
+    }
+
+    // draw line between globalInputPin and global output pins
+    for (int i = 0; i < globalInputPins->size(); i++)
+    {
+        for (int j = 0; j < globalInputPins->at(i)->gbinds->size(); j++)
+        {
+            if (globalInputPins->at(i)->state == 1)
+            {
+                cr->set_source_rgb(255 / 255.0, 255 / 255.0, 255 / 255.0);
+            }
+            else
+            {
                 cr->set_source_rgb(20 / 255.0, 20 / 255.0, 20 / 255.0);
             }
             cr->set_line_width(4);
 
-            cr->move_to(globalInputPins->at(i)->radius + globalPinGap, globalInputPins->at(i)->y);
-            cr->line_to(globalInputPins->at(i)->binds->at(j).input.x, globalInputPins->at(i)->binds->at(j).input.y);
-            cr->stroke();
+            draw_wire_between(globalInputPins->at(i)->gbinds->at(j), cr);
         }
     }
+
     for (int i = 0; i < chips->size(); i++)
     {
         (*chips)[i].draw(cr);
@@ -386,13 +848,11 @@ void ChipSelectorUI::on_chip_selected(int index)
     selected_chip = index;
 }
 
-Bind::Bind(InputPin &input) : input(input){
+Bind::Bind(InputPin &input) : input(input) {
+                              };
 
-}
-
-BindToGlobalOutPut::BindToGlobalOutPut(GlobalOutputPin &output) : output(output)
-{
-}
+BindToGlobalOutPut::BindToGlobalOutPut(GlobalOutputPin &output) : output(output) {
+                                                                  };
 
 void Bind::printConnection()
 {
@@ -406,7 +866,6 @@ Pin::Pin(std::string name, int index)
     this->name = name;
     this->index = index;
 }
-
 
 void Pin::printCord()
 {
@@ -427,9 +886,10 @@ void Pin::setCord(int xP, int yP)
 
 bool Pin::isInside(int mouseX, int mouseY)
 {
+
     if (mouseX >= x - radius && mouseX <= x + radius && mouseY >= y - radius && mouseY <= y + radius)
     {
-        // std::cout << "Mouse is inside the pin" << std::endl;
+        std::cout << "Mouse is inside the pin" << std::endl;
         return true;
     }
     return false;
@@ -447,14 +907,16 @@ Cord Pin::getCord()
 
 void OutputPin::bindTo(InputPin &inputPin)
 {
-    Bind bind(inputPin);
+    Bind *bind = new Bind(inputPin);
+    bind->output = this;
+    inputPin.bind = bind;
     // std::cout << "address of inputPin: " <<  &inputPin << std::endl;
     binds->push_back(bind);
 }
 
 void OutputPin::bindToGlobalOutput(GlobalOutputPin &output)
 {
-    BindToGlobalOutPut bind(output);
+    BindToGlobalOutPut *bind = new BindToGlobalOutPut(output);
     bindsToGlobalOutput->push_back(bind);
 }
 
@@ -483,31 +945,42 @@ void ChipStructure::setLoc(int x, int y)
     this->boundingBox->intial_y = y;
 }
 
+CustomChip::CustomChip(std::vector<GlobalInputPin *> *globalInputPins, std::vector<GlobalOutputPin *> *globalOutputPins)
+{
+    this->globalInputPins = globalInputPins;
+    this->globalOutputPins = globalOutputPins;
+}
+
 Chip::Chip(ChipStructure *structure, std::vector<InputPin *> inputPins, std::vector<OutputPin *> outputPins, std::string name)
 {
     this->structure = structure;
     this->inputPins = inputPins;
     this->outputPins = outputPins;
     this->name = name;
-    for(int i = 0;i < outputPins.size();i++){
+    for (int i = 0; i < outputPins.size(); i++)
+    {
         outputPins[i]->chip = this;
     }
-    for(int i = 0;i < inputPins.size();i++){
+    for (int i = 0; i < inputPins.size(); i++)
+    {
         inputPins[i]->chip = this;
     }
 };
 
-void Chip::addInputPin(InputPin *inputPin){
+void Chip::addInputPin(InputPin *inputPin)
+{
     inputPin->chip = this;
     inputPins.push_back(inputPin);
 }
 
-void Chip::addOutputPin(OutputPin *outputPin){
+void Chip::addOutputPin(OutputPin *outputPin)
+{
     outputPin->chip = this;
     outputPins.push_back(outputPin);
 }
 
-void Chip::run(){
+void Chip::run()
+{
     // check chip type
     // if AND then check all inputPins and update the outputPins
     // if NOT then check all inputPins and update the outputPins
@@ -515,37 +988,50 @@ void Chip::run(){
     // if outputPins are connected to any other chip then update that chip
     // if outputPins are connected to globalOutputPins then update the globalOutputPins
 
-    if(type == ChipType::AND){
-        for(int i = 0;i < outputPins.size();i++){
+    if (type == ChipType::AND)
+    {
+        for (int i = 0; i < outputPins.size(); i++)
+        {
             outputPins[i]->state = inputPins[0]->state && inputPins[1]->state;
         }
-    } else if(type == ChipType::NOT){
-        for(int i = 0;i < outputPins.size();i++){
+    }
+    else if (type == ChipType::NOT)
+    {
+        for (int i = 0; i < outputPins.size(); i++)
+        {
             outputPins[i]->state = !inputPins[0]->state;
         }
-    } else if(type == ChipType::CUSTOM){
+    }
+    else if (type == ChipType::CUSTOM)
+    {
         // custom logic
     }
 
     // array of chips
     std::vector<Chip *> chips;
-    
-    for(int i = 0;i < outputPins.size();i++){
-        for(int j = 0;j < outputPins[i]->binds->size();j++){
-            outputPins[i]->binds->at(j).input.state = outputPins[i]->state;
-            if(outputPins[i]->binds->at(j).input.chip != nullptr){
-                chips.push_back(outputPins[i]->binds->at(j).input.chip);
+
+    for (int i = 0; i < outputPins.size(); i++)
+    {
+        for (int j = 0; j < outputPins[i]->binds->size(); j++)
+        {
+            outputPins[i]->binds->at(j)->input.state = outputPins[i]->state;
+            if (outputPins[i]->binds->at(j)->input.chip != nullptr)
+            {
+                chips.push_back(outputPins[i]->binds->at(j)->input.chip);
             }
         }
     }
 
-    for(int i = 0;i < outputPins.size();i++){
-        for(int j = 0;j < outputPins[i]->bindsToGlobalOutput->size();j++){
-            outputPins[i]->bindsToGlobalOutput->at(j).output.state = outputPins[i]->state;
+    for (int i = 0; i < outputPins.size(); i++)
+    {
+        for (int j = 0; j < outputPins[i]->bindsToGlobalOutput->size(); j++)
+        {
+            outputPins[i]->bindsToGlobalOutput->at(j)->output.state = outputPins[i]->state;
         }
     }
 
-    for(int i = 0;i < chips.size();i++){
+    for (int i = 0; i < chips.size(); i++)
+    {
         chips[i]->run();
     }
 }
@@ -555,6 +1041,27 @@ bool Chip::isMouseInside(int x, int y)
     // std::cout << "X: " << x << " Y: " << y << " Chip X: " << structure->boundingBox->x << " Chip Y: " << structure->boundingBox->y << " Chip Width: " << structure->boundingBox->width << " Chip Height: " << structure->boundingBox->height << std::endl;
     return x >= structure->boundingBox->x && x <= structure->boundingBox->x + structure->boundingBox->width && y >= structure->boundingBox->y && y <= structure->boundingBox->y + structure->boundingBox->height;
 }
+
+// static Chip* create_chip(ChipArea *chipArea){
+// global input pins of chips area will be input pins of chip
+// global output pins of chips area will be output pins of chip
+// chip type will be CUSTOM
+
+// std::vector<GlobalInputPin*> *globalInputPins;
+// // deep copy of all global input pins
+// for(int i = 0;i < chipArea->globalInputPins->size();i++){
+//     GlobalInputPin *p = new GlobalInputPin(chipArea->globalInputPins->at(i)->index, chipArea->globalInputPins->at(i)->y);
+//     // p->state = chipArea->globalInputPins->at(i)->state;
+//     std::vector<Bind> *binds;
+//     for(int j = 0;j < chipArea->globalInputPins->at(i)->binds->size();j++){
+//         Bind bind = chipArea->globalInputPins->at(i)->binds->at(j);
+//         binds->push_back(bind);
+//     }
+
+//     globalInputPins->push_back(p);
+// }
+
+// }
 
 MouseOffset Chip::getMouseOffset(int x, int y)
 {
@@ -605,9 +1112,12 @@ void Chip::draw(const Cairo::RefPtr<Cairo::Context> &cr)
 
     for (int i = 0; i < inputPins.size(); i++)
     {
-        if(inputPins[i]->state == 1){
+        if (inputPins[i]->state == 1)
+        {
             cr->set_source_rgb(255 / 255.0, 255 / 255.0, 255 / 255.0);
-        } else {
+        }
+        else
+        {
             cr->set_source_rgb(20 / 255.0, 20 / 255.0, 20 / 255.0);
         }
         // cr->arc(20, i * gapper + gapper / 2, 5, 0, 2 * M_PI);
@@ -621,17 +1131,22 @@ void Chip::draw(const Cairo::RefPtr<Cairo::Context> &cr)
         cr->set_font_size(14);
         cr->show_text(inputPins[i]->name);
         inputPins[i]->setCord(x, y + i * (inputPinEachHeight) + (inputPinEachHeight / 2));
+        inputPins[i]->setRadius(eachPinSpace - 3);
+
         // std::cout << "Input Pin:" << std::endl;
-        inputPins[i]->printCord();
+        // inputPins[i]->printCord();
         // std::cout << "x:" << inputPins[i]->x << " y:" << inputPins[i]->y << std::endl;
     }
 
     // draw the output pins
     for (int i = 0; i < outputPins.size(); i++)
     {
-        if(outputPins[i]->state == 1){
+        if (outputPins[i]->state == 1)
+        {
             cr->set_source_rgb(255 / 255.0, 255 / 255.0, 255 / 255.0);
-        } else {
+        }
+        else
+        {
             cr->set_source_rgb(20 / 255.0, 20 / 255.0, 20 / 255.0);
         }
         // cr->arc(80, i * gapper + gapper / 2, 5, 0, 2 * M_PI);
@@ -644,8 +1159,10 @@ void Chip::draw(const Cairo::RefPtr<Cairo::Context> &cr)
         cr->set_font_size(14);
         cr->show_text(outputPins[i]->name);
         outputPins[i]->setCord(x + width, y + i * (outputPinEachHeight) + (outputPinEachHeight / 2));
+        outputPins[i]->setRadius(eachPinSpace - 3);
+
         // std::cout << "Output Pin:" << std::endl;
-        outputPins[i]->printCord();
+        // outputPins[i]->printCord();
 
         // std::cout << "x:" << outputPins[i]->x << " y:" << outputPins[i]->y << std::endl;
         // // std::cout << "Size:" << outputPins[i]->binds->size() << std::endl;
@@ -666,16 +1183,21 @@ void Chip::draw(const Cairo::RefPtr<Cairo::Context> &cr)
     {
         for (int j = 0; j < outputPins[i]->binds->size(); j++)
         {
-            if(outputPins[i]->state == 1){
+            if (outputPins[i]->state == 1)
+            {
                 cr->set_source_rgb(255 / 255.0, 255 / 255.0, 255 / 255.0);
-            } else {
+            }
+            else
+            {
                 cr->set_source_rgb(20 / 255.0, 20 / 255.0, 20 / 255.0);
             }
             cr->set_line_width(4);
 
-            cr->move_to(outputPins[i]->x, outputPins[i]->y);
-            cr->line_to(outputPins[i]->binds->at(j).input.x, outputPins[i]->binds->at(j).input.y);
-            cr->stroke();
+            draw_wire_between(outputPins[i]->binds->at(j), cr);
+
+            // cr->move_to(outputPins[i]->x, outputPins[i]->y);
+            // cr->line_to(outputPins[i]->binds->at(j).input.x, outputPins[i]->binds->at(j).input.y);
+            // cr->stroke();
         }
     }
 
@@ -684,19 +1206,23 @@ void Chip::draw(const Cairo::RefPtr<Cairo::Context> &cr)
     {
         for (int j = 0; j < outputPins[i]->bindsToGlobalOutput->size(); j++)
         {
-            if(outputPins[i]->state == 1){
+            if (outputPins[i]->state == 1)
+            {
                 cr->set_source_rgb(255 / 255.0, 255 / 255.0, 255 / 255.0);
-            } else {
+            }
+            else
+            {
                 cr->set_source_rgb(20 / 255.0, 20 / 255.0, 20 / 255.0);
             }
             cr->set_line_width(4);
             // width - globalOutputPins->at(i)->radius - 10
-            cr->move_to(outputPins[i]->x, outputPins[i]->y);
-            cr->line_to(outputPins[i]->bindsToGlobalOutput->at(j).output.x, outputPins[i]->bindsToGlobalOutput->at(j).output.y);
-            cr->stroke();
+
+            draw_wire_between(outputPins[i]->bindsToGlobalOutput->at(j), cr);
+            // cr->move_to(outputPins[i]->x, outputPins[i]->y);
+            // cr->line_to(outputPins[i]->bindsToGlobalOutput->at(j).output.x, outputPins[i]->bindsToGlobalOutput->at(j).output.y);
+            // cr->stroke();
         }
     }
-
 
     // draw the name of the chip
     cr->set_source_rgb(1.0, 1.0, 1.0);
@@ -710,14 +1236,16 @@ void Chip::draw(const Cairo::RefPtr<Cairo::Context> &cr)
     cr->fill();
 }
 
-
 void GlobalInputPin::bindTo(InputPin &inputPin)
 {
-    Bind bind(inputPin);
+    Bind *bind = new Bind(inputPin);
+    bind->gInput = this;
+    inputPin.bind = bind;
     binds->push_back(bind);
 }
 
-bool GlobalInputPin::IsToggleBtnInside(double mouseX, double mouseY){
+bool GlobalInputPin::IsToggleBtnInside(double mouseX, double mouseY)
+{
     return mouseX >= boundingBox->x && mouseX <= boundingBox->x + boundingBox->width && mouseY >= boundingBox->y && mouseY <= boundingBox->y + boundingBox->height;
 }
 
@@ -725,7 +1253,7 @@ ChipSelectorMenu::ChipSelectorMenu(int width, int height)
 {
     // set_css_classes({"action-menu-big-box"});
     Gtk::Fixed *ActionMenuFixed = Gtk::manage(new Gtk::Fixed());
-    
+
     ActionMenuFrame = Gtk::manage(new Gtk::Frame);
     // ActionMenuFrame->set_size_request(200,200);
 
@@ -735,43 +1263,41 @@ ChipSelectorMenu::ChipSelectorMenu(int width, int height)
 
     Gtk::Button *quit = Gtk::manage(new Gtk::Button());
     quit->set_css_classes({"action-menu-btn"});
-    quit->set_size_request(300,50);
+    quit->set_size_request(300, 50);
     quit->set_label("QUIT");
 
     Gtk::Button *library = Gtk::manage(new Gtk::Button());
-    library->set_size_request(300,50);
+    library->set_size_request(300, 50);
     library->set_css_classes({"action-menu-btn"});
     library->set_label("LIBRARY");
 
     Gtk::Button *save = Gtk::manage(new Gtk::Button());
     save->set_css_classes({"action-menu-btn"});
-    save->set_size_request(300,50);
+    save->set_size_request(300, 50);
     save->set_label("SAVE");
-
 
     ActionBox->append(*quit);
     ActionBox->append(*library);
     ActionBox->append(*save);
 
     ActionMenuFrame->set_child(*ActionBox);
-    ActionMenuFixed->put(*ActionMenuFrame, 0,height-150-50-91);
+    ActionMenuFixed->put(*ActionMenuFrame, 0, height - 150 - 50 - 91);
     append(*ActionMenuFixed);
 
     this->m_GestureClick = Gtk::GestureClick::create();
     this->m_GestureClick->set_propagation_phase(Gtk::PropagationPhase::CAPTURE);
     this->m_GestureClick->signal_pressed().connect(sigc::mem_fun(*this, ChipSelectorMenu::hideMenu));
     add_controller(this->m_GestureClick);
-    
 }
 
-void ChipSelectorMenu::hideMenu(int ,int ,int)
+void ChipSelectorMenu::hideMenu(int, int, int)
 {
     hide();
-    visible =false;
+    visible = false;
 }
 
 void ChipSelectorMenu::showMenu()
 {
     show();
-    visible =true;
+    visible = true;
 }
