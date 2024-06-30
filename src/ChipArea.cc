@@ -17,27 +17,35 @@ void draw_wire_between(Bind *bind, const Cairo::RefPtr<Cairo::Context> &cr)
         if (bind->wire->breakPoints->size() != 0)
         {
             std::cout << "Break Points: " << bind->wire->breakPoints->size() << std::endl;
-            if (bind->gInput != nullptr)
+                if (bind->gInput != nullptr)
+                {
+                    cr->move_to(bind->gInput->x, bind->gInput->y);
+                }
+                else if (bind->output != nullptr)
+                {
+                    cr->move_to(bind->output->x, bind->output->y);
+                }
+            if (bind->wire->breakPoints->size() != 2)
             {
-                cr->move_to(bind->gInput->x, bind->gInput->y);
-            }
-            else if (bind->output != nullptr)
-            {
-                cr->move_to(bind->output->x, bind->output->y);
-            }
-            cr->line_to(bind->wire->breakPoints->at(1).x, bind->wire->breakPoints->at(1).y);
-            cr->stroke();
-            for (int i = 1; i < bind->wire->breakPoints->size() - 2; i++)
-            {
-                cr->move_to(bind->wire->breakPoints->at(i).x, bind->wire->breakPoints->at(i).y);
-                cr->line_to(bind->wire->breakPoints->at(i + 1).x, bind->wire->breakPoints->at(i + 1).y);
+                cr->line_to(bind->wire->breakPoints->at(1).x, bind->wire->breakPoints->at(1).y);
+                cr->stroke();
+                for (int i = 1; i < bind->wire->breakPoints->size() - 2; i++)
+                {
+                    cr->move_to(bind->wire->breakPoints->at(i).x, bind->wire->breakPoints->at(i).y);
+                    cr->line_to(bind->wire->breakPoints->at(i + 1).x, bind->wire->breakPoints->at(i + 1).y);
+                    cr->stroke();
+                }
+                // input pin line drawing
+                cr->move_to(bind->input.x, bind->input.y);
+                int index = bind->wire->breakPoints->size() - 2;
+                cr->line_to(bind->wire->breakPoints->at(index).x, bind->wire->breakPoints->at(index).y);
                 cr->stroke();
             }
-            // input pin line drawing
-            cr->move_to(bind->input.x, bind->input.y);
-            int index = bind->wire->breakPoints->size() - 2;
-            cr->line_to(bind->wire->breakPoints->at(index).x, bind->wire->breakPoints->at(index).y);
-            cr->stroke();
+            else
+            {
+                cr->line_to(bind->input.x, bind->input.y);
+                cr->stroke();
+            }
         }
     }
 }
@@ -58,7 +66,8 @@ void draw_wire_between(BindToGlobalOutPut *bind, const Cairo::RefPtr<Cairo::Cont
             {
                 cr->move_to(bind->localOutput->x, bind->localOutput->y);
             }
-            cr->line_to(bind->wire->breakPoints->at(1).x, bind->wire->breakPoints->at(1).y);
+            if(bind->wire->breakPoints->size() != 2){
+                            cr->line_to(bind->wire->breakPoints->at(1).x, bind->wire->breakPoints->at(1).y);
             cr->stroke();
             std::cout << "Break Points: " << bind->wire->breakPoints->size() << std::endl;
             for (int i = 1; i < bind->wire->breakPoints->size() - 2; i++)
@@ -72,6 +81,10 @@ void draw_wire_between(BindToGlobalOutPut *bind, const Cairo::RefPtr<Cairo::Cont
             int index = bind->wire->breakPoints->size() - 2;
             cr->line_to(bind->wire->breakPoints->at(index).x, bind->wire->breakPoints->at(index).y);
             cr->stroke();
+            }else{
+                cr->line_to(bind->output.x, bind->output.y);
+                cr->stroke();
+            }
         }
     }
 }
@@ -160,7 +173,7 @@ ChipArea::ChipArea(ScreenStack *stack)
     create_chip(0);
 
     // chipSelector UI
-    ActionMenu = new ChipSelectorMenu(width,height, stack);
+    ActionMenu = new ChipSelectorMenu(width, height, stack);
     chipSelector = Gtk::manage(new ChipSelectorUI(ActionMenu));
 
     ActionMenu->hide();
@@ -191,7 +204,8 @@ void ChipArea::clear_actions()
     draggedOutputPin = nullptr;
     draggedGlobalOutputPin = nullptr;
     draggedInputPin = nullptr;
-    if(draggedWire != nullptr){
+    if (draggedWire != nullptr)
+    {
         draggedWire->breakPoints->clear();
         draggedWire = nullptr;
     }
@@ -1303,7 +1317,7 @@ void ChipSelectorMenu::hideMenu(int, int, int)
 void ChipSelectorMenu::showMenu()
 {
     show();
-    visible =true;
+    visible = true;
 }
 
 void ChipSelectorMenu::quit()
