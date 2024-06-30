@@ -20,24 +20,39 @@ void draw_wire_between(Bind *bind, const Cairo::RefPtr<Cairo::Context> &cr)
             if (bind->gInput != nullptr)
             {
                 cr->move_to(bind->gInput->x, bind->gInput->y);
+                bind->wire->breakPoints->at(0).x = bind->gInput->x;
+                bind->wire->breakPoints->at(0).y = bind->gInput->y;
             }
             else if (bind->output != nullptr)
             {
                 cr->move_to(bind->output->x, bind->output->y);
+                bind->wire->breakPoints->at(0).x = bind->output->x;
+                bind->wire->breakPoints->at(0).y = bind->output->y;
             }
-            cr->line_to(bind->wire->breakPoints->at(1).x, bind->wire->breakPoints->at(1).y);
-            cr->stroke();
-            for (int i = 1; i < bind->wire->breakPoints->size() - 2; i++)
+            if (bind->wire->breakPoints->size() != 2)
             {
-                cr->move_to(bind->wire->breakPoints->at(i).x, bind->wire->breakPoints->at(i).y);
-                cr->line_to(bind->wire->breakPoints->at(i + 1).x, bind->wire->breakPoints->at(i + 1).y);
+                cr->line_to(bind->wire->breakPoints->at(1).x, bind->wire->breakPoints->at(1).y);
+                cr->stroke();
+                for (int i = 1; i < bind->wire->breakPoints->size() - 2; i++)
+                {
+                    cr->move_to(bind->wire->breakPoints->at(i).x, bind->wire->breakPoints->at(i).y);
+                    cr->line_to(bind->wire->breakPoints->at(i + 1).x, bind->wire->breakPoints->at(i + 1).y);
+                    cr->stroke();
+                }
+                // input pin line drawing
+                cr->move_to(bind->input.x, bind->input.y);
+                int index = bind->wire->breakPoints->size() - 2;
+                cr->line_to(bind->wire->breakPoints->at(index).x, bind->wire->breakPoints->at(index).y);
                 cr->stroke();
             }
-            // input pin line drawing
-            cr->move_to(bind->input.x, bind->input.y);
-            int index = bind->wire->breakPoints->size() - 2;
-            cr->line_to(bind->wire->breakPoints->at(index).x, bind->wire->breakPoints->at(index).y);
-            cr->stroke();
+            else
+            {
+                cr->line_to(bind->input.x, bind->input.y);
+                cr->stroke();
+            }
+            int gIndex = bind->wire->breakPoints->size() - 1;
+            bind->wire->breakPoints->at(gIndex).x = bind->input.x;
+            bind->wire->breakPoints->at(gIndex).y = bind->input.y;
         }
     }
 }
@@ -53,25 +68,40 @@ void draw_wire_between(BindToGlobalOutPut *bind, const Cairo::RefPtr<Cairo::Cont
             if (bind->gInput != nullptr)
             {
                 cr->move_to(bind->gInput->x, bind->gInput->y);
+                bind->wire->breakPoints->at(0).x = bind->gInput->x;
+                bind->wire->breakPoints->at(0).y = bind->gInput->y;
             }
             else if (bind->localOutput != nullptr)
             {
                 cr->move_to(bind->localOutput->x, bind->localOutput->y);
+                bind->wire->breakPoints->at(0).x = bind->localOutput->x;
+                bind->wire->breakPoints->at(0).y = bind->localOutput->y;
             }
-            cr->line_to(bind->wire->breakPoints->at(1).x, bind->wire->breakPoints->at(1).y);
-            cr->stroke();
-            std::cout << "Break Points: " << bind->wire->breakPoints->size() << std::endl;
-            for (int i = 1; i < bind->wire->breakPoints->size() - 2; i++)
+            if (bind->wire->breakPoints->size() != 2)
             {
-                cr->move_to(bind->wire->breakPoints->at(i).x, bind->wire->breakPoints->at(i).y);
-                cr->line_to(bind->wire->breakPoints->at(i + 1).x, bind->wire->breakPoints->at(i + 1).y);
+                cr->line_to(bind->wire->breakPoints->at(1).x, bind->wire->breakPoints->at(1).y);
+                cr->stroke();
+                std::cout << "Break Points: " << bind->wire->breakPoints->size() << std::endl;
+                for (int i = 1; i < bind->wire->breakPoints->size() - 2; i++)
+                {
+                    cr->move_to(bind->wire->breakPoints->at(i).x, bind->wire->breakPoints->at(i).y);
+                    cr->line_to(bind->wire->breakPoints->at(i + 1).x, bind->wire->breakPoints->at(i + 1).y);
+                    cr->stroke();
+                }
+                // GlobalOutputPin line drawing
+                cr->move_to(bind->output.x, bind->output.y);
+                int index = bind->wire->breakPoints->size() - 2;
+                cr->line_to(bind->wire->breakPoints->at(index).x, bind->wire->breakPoints->at(index).y);
                 cr->stroke();
             }
-            // GlobalOutputPin line drawing
-            cr->move_to(bind->output.x, bind->output.y);
-            int index = bind->wire->breakPoints->size() - 2;
-            cr->line_to(bind->wire->breakPoints->at(index).x, bind->wire->breakPoints->at(index).y);
-            cr->stroke();
+            else
+            {
+                cr->line_to(bind->output.x, bind->output.y);
+                cr->stroke();
+            }
+            int gIndex = bind->wire->breakPoints->size() - 1;
+            bind->wire->breakPoints->at(gIndex).x = bind->output.x;
+            bind->wire->breakPoints->at(gIndex).y = bind->output.y;
         }
     }
 }
