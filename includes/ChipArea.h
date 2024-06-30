@@ -157,12 +157,15 @@ public:
     int y;
     void setCord(int x, int y);
     bool isInside(int mouseX, int mouseY);
+    bool isMouseHovering(int mouseX, int mouseY);
+    int hoverRange = 0;
     int radius;
     void setRadius(int radius);
     void printCord();
     Cord getCord();
     Chip *chip;
     int state = 0;
+    bool isHovered = false;
 };
 
 class InputPin : public Pin
@@ -220,6 +223,10 @@ public:
     void draw(const Cairo::RefPtr<Cairo::Context> &cr);
     MouseOffset getMouseOffset(int x, int y);
     bool isMouseInside(int x, int y);
+    bool isMouseHover(int x, int y);
+    int hoverRange = 10;
+    bool isHovered = false;
+    bool isClicked = false;
     bool isDragging = false;
     ChipType type;
     void addInputPin(InputPin *inputPin);

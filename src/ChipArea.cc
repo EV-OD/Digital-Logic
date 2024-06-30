@@ -160,7 +160,7 @@ ChipArea::ChipArea(ScreenStack *stack)
     create_chip(0);
 
     // chipSelector UI
-    ActionMenu = new ChipSelectorMenu(width,height, stack);
+    ActionMenu = new ChipSelectorMenu(width, height, stack);
     chipSelector = Gtk::manage(new ChipSelectorUI(ActionMenu));
 
     ActionMenu->hide();
@@ -179,6 +179,29 @@ ChipArea::ChipArea(ScreenStack *stack)
 void ChipArea::on_my_motion(double x, double y)
 {
     mousePos = CordDouble{x - margin, y - margin};
+
+    // hover
+    for (int i = 0; i < chips->size(); i++)
+    {
+        // for chips
+        if (chips->at(i).isHovered != chips->at(i).isMouseHover(mousePos.x, mousePos.y))
+        {
+            chips->at(i).isHovered = chips->at(i).isMouseHover(mousePos.x, mousePos.y);
+            canvas->queue_draw();
+        }
+        else
+        {
+        }
+
+        // for input pins
+        for (int j = 0; j < chips->at(i).inputPins.size(); j++)
+        {
+            // chips->at(j).inputPins[j]->isHovered = chips->at(j).inputPins[j]->isMouseHover(mousePos.x, mousePos.y);
+            // std::cout<<chips->at(j).inputPins[j]->isMouseHovering(mousePos.x,mousePos.y)<<std::endl;
+            // std::cout<<(chips->at(i).inputPins[j] = nullptr)<<std::endl;
+        }
+    }
+
     if (draggedWire != nullptr)
     {
         canvas->queue_draw();
@@ -191,7 +214,8 @@ void ChipArea::clear_actions()
     draggedOutputPin = nullptr;
     draggedGlobalOutputPin = nullptr;
     draggedInputPin = nullptr;
-    if(draggedWire != nullptr){
+    if (draggedWire != nullptr)
+    {
         draggedWire->breakPoints->clear();
         draggedWire = nullptr;
     }
@@ -247,6 +271,7 @@ void ChipArea::on_my_pressed(int n_press, double x, double y)
             // check input pin
             for (int i = 0; i < chips->size(); i++)
             {
+
                 for (int j = 0; j < chips->at(i).inputPins.size(); j++)
                 {
                     if (chips->at(i).inputPins[j]->isInside(x - margin, y - margin))
@@ -472,6 +497,14 @@ void ChipArea::on_my_pressed(int n_press, double x, double y)
             //         break;
             //     }
             // }
+            if (chips->at(i).isMouseInside(x - margin, y - margin))
+            {
+                chips->at(i).isClicked = true;
+            }
+            else
+            {
+                chips->at(i).isClicked = false;
+            }
 
             for (int j = 0; j < chips->at(i).outputPins.size(); j++)
             {
@@ -815,6 +848,7 @@ void ChipArea::draw_on_canvas(const Cairo::RefPtr<Cairo::Context> &cr,
         }
     }
 
+    // drawing the chips
     for (int i = 0; i < chips->size(); i++)
     {
         (*chips)[i].draw(cr);
@@ -849,11 +883,9 @@ void ChipSelectorUI::on_chip_selected(int index)
     selected_chip = index;
 }
 
-Bind::Bind(InputPin &input) : input(input) {
-                              };
+Bind::Bind(InputPin &input) : input(input){};
 
-BindToGlobalOutPut::BindToGlobalOutPut(GlobalOutputPin &output) : output(output) {
-                                                                  };
+BindToGlobalOutPut::BindToGlobalOutPut(GlobalOutputPin &output) : output(output){};
 
 void Bind::printConnection()
 {
@@ -893,6 +925,32 @@ bool Pin::isInside(int mouseX, int mouseY)
         std::cout << "Mouse is inside the pin" << std::endl;
         return true;
     }
+    return false;
+}
+
+bool Pin::isMouseHovering(int mouseX, int mouseY)
+{
+    // if (mouseX >= x - radius - hoverRange && mouseX <= x + radius + hoverRange && mouseY >= y - radius - hoverRange && mouseY <= y + radius-hoverRange)
+    // {
+    //     std::cout << "Mouse is hovering the pin" << std::endl;
+    //     return true;
+    // }
+    // else{
+    // return false;
+    // }
+    // std::cout<<mouseX<<std::endl;
+    // std::cout<<mouseY<<std::endl;
+    std::cout << radius << std::endl;
+    // std::cout<<(mouseX >= (x - radius - hoverRange))<<std::endl;
+
+    // std::cout<<(mouseX <= x + radius + hoverRange)<<std::endl;
+    // std::cout<<(mouseY >= y - radius - hoverRange)<<std::endl;
+    // std::cout<<(mouseY <= y + radius-hoverRange)<<std::endl;
+
+    std::cout << std::endl;
+    std::cout << std::endl;
+  
+
     return false;
 }
 
@@ -958,6 +1016,7 @@ Chip::Chip(ChipStructure *structure, std::vector<InputPin *> inputPins, std::vec
     this->inputPins = inputPins;
     this->outputPins = outputPins;
     this->name = name;
+
     for (int i = 0; i < outputPins.size(); i++)
     {
         outputPins[i]->chip = this;
@@ -1043,6 +1102,11 @@ bool Chip::isMouseInside(int x, int y)
     return x >= structure->boundingBox->x && x <= structure->boundingBox->x + structure->boundingBox->width && y >= structure->boundingBox->y && y <= structure->boundingBox->y + structure->boundingBox->height;
 }
 
+bool Chip::isMouseHover(int x, int y)
+{
+    return x >= (structure->boundingBox->x - hoverRange) && x <= (structure->boundingBox->x + structure->boundingBox->width + hoverRange) && y >= (structure->boundingBox->y - hoverRange) && y <= (structure->boundingBox->y + structure->boundingBox->height + hoverRange);
+}
+
 // static Chip* create_chip(ChipArea *chipArea){
 // global input pins of chips area will be input pins of chip
 // global output pins of chips area will be output pins of chip
@@ -1081,17 +1145,6 @@ void Chip::draw(const Cairo::RefPtr<Cairo::Context> &cr)
     // draw rectange
     // draw input and output pins
     // draw the name of the chip
-
-    cr->set_source_rgb(38 / 255.0, 38 / 255.0, 38 / 255.0);
-    // calculate height using the max(height of input pins, height of output pins)
-    // int gapper = 40;
-    // int inputHeight = inputPins->size() * gapper;
-    // int outputHeight = outputPins->size() * gapper;
-    // int height = inputHeight > outputHeight ? inputHeight : outputHeight;
-    // cr->set_source_rgb(6/255, 39/255, 92/255);
-    // cr->rectangle(0, 0, 100, height);
-    // cr->fill();
-
     int x = structure->boundingBox->x;
     int y = structure->boundingBox->y;
 
@@ -1104,39 +1157,68 @@ void Chip::draw(const Cairo::RefPtr<Cairo::Context> &cr)
     structure->boundingBox->width = width;
     structure->boundingBox->height = height;
 
-    cr->set_source_rgb(200 / 255.0, 39 / 255.0, 92 / 255.0);
-    cr->rectangle(x, y, width, height);
-    cr->fill();
+    if (Chip::isClicked)
+    {
+        cr->set_source_rgb(74 / 255.0, 74 / 255.0, 74 / 255.0);
+        cr->rectangle(x - hoverRange, y - hoverRange, width + 2 * hoverRange, height + 2 * hoverRange);
+        cr->fill();
+        cr->set_source_rgb(200 / 255.0, 39 / 255.0, 92 / 255.0);
+        cr->rectangle(x, y, width, height);
+        cr->fill();
+    }
+
+    else
+    {
+        cr->set_source_rgb(200 / 255.0, 39 / 255.0, 92 / 255.0);
+        cr->rectangle(x, y, width, height);
+        cr->fill();
+    }
 
     // draw the input pins
     int eachPinSpace = (height / (inputPins.size() > outputPins.size() ? inputPins.size() : outputPins.size())) / 2;
 
-    for (int i = 0; i < inputPins.size(); i++)
+    if (Chip::isHovered)
     {
-        if (inputPins[i]->state == 1)
+        for (int i = 0; i < inputPins.size(); i++)
         {
+            int inputPinEachHeight = height / inputPins.size();
             cr->set_source_rgb(255 / 255.0, 255 / 255.0, 255 / 255.0);
+            cr->arc(x, y + i * (inputPinEachHeight) + (inputPinEachHeight / 2), eachPinSpace - 1, 0, 2 * M_PI);
+            cr->fill();
+
+            cr->set_source_rgb(1.0, 1.0, 1.0);
+            cr->move_to(x + 15, y + i * (inputPinEachHeight) + (inputPinEachHeight / 2) + 3);
+            cr->set_font_size(14);
+            cr->show_text(inputPins[i]->name);
+            inputPins[i]->setCord(x, y + i * (inputPinEachHeight) + (inputPinEachHeight / 2));
+            inputPins[i]->setRadius(eachPinSpace - 3);
         }
-        else
+    }
+    else
+    {
+
+        for (int i = 0; i < inputPins.size(); i++)
         {
-            cr->set_source_rgb(20 / 255.0, 20 / 255.0, 20 / 255.0);
+            int inputPinEachHeight = height / inputPins.size();
+            if (inputPins[i]->state == 1)
+            {
+                cr->set_source_rgb(255 / 255.0, 255 / 255.0, 255 / 255.0);
+            }
+            else
+            {
+                cr->set_source_rgb(20 / 255.0, 20 / 255.0, 20 / 255.0);
+            }
+            cr->arc(x, y + i * (inputPinEachHeight) + (inputPinEachHeight / 2), eachPinSpace - 3, 0, 2 * M_PI);
+
+            cr->fill();
+
+            cr->set_source_rgb(1.0, 1.0, 1.0);
+            cr->move_to(x + 15, y + i * (inputPinEachHeight) + (inputPinEachHeight / 2) + 3);
+            cr->set_font_size(14);
+            cr->show_text(inputPins[i]->name);
+            inputPins[i]->setCord(x, y + i * (inputPinEachHeight) + (inputPinEachHeight / 2));
+            inputPins[i]->setRadius(eachPinSpace - 3);
         }
-        // cr->arc(20, i * gapper + gapper / 2, 5, 0, 2 * M_PI);
-        int inputPinEachHeight = height / inputPins.size();
-        cr->arc(x, y + i * (inputPinEachHeight) + (inputPinEachHeight / 2), eachPinSpace - 3, 0, 2 * M_PI);
-
-        cr->fill();
-
-        cr->set_source_rgb(1.0, 1.0, 1.0);
-        cr->move_to(x + 15, y + i * (inputPinEachHeight) + (inputPinEachHeight / 2) + 3);
-        cr->set_font_size(14);
-        cr->show_text(inputPins[i]->name);
-        inputPins[i]->setCord(x, y + i * (inputPinEachHeight) + (inputPinEachHeight / 2));
-        inputPins[i]->setRadius(eachPinSpace - 3);
-
-        // std::cout << "Input Pin:" << std::endl;
-        // inputPins[i]->printCord();
-        // std::cout << "x:" << inputPins[i]->x << " y:" << inputPins[i]->y << std::endl;
     }
 
     // draw the output pins
@@ -1303,7 +1385,7 @@ void ChipSelectorMenu::hideMenu(int, int, int)
 void ChipSelectorMenu::showMenu()
 {
     show();
-    visible =true;
+    visible = true;
 }
 
 void ChipSelectorMenu::quit()
