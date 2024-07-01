@@ -157,7 +157,7 @@ public:
     int y;
     void setCord(int x, int y);
     bool isInside(int mouseX, int mouseY);
-    bool isMouseHovering(int mouseX, int mouseY);
+    bool isMouseHovering(int mouseX, int mouseY, int width = 0);
     int hoverRange = 0;
     int radius;
     void setRadius(int radius);
@@ -211,6 +211,12 @@ enum ChipType
     CUSTOM
 };
 
+enum PinType
+{
+    outputPin,
+    inputPin
+};
+
 class Chip
 {
 public:
@@ -221,6 +227,9 @@ public:
     std::vector<OutputPin *> outputPins;
     std::string name;
     void draw(const Cairo::RefPtr<Cairo::Context> &cr);
+    void draw_hovered_pin(const Cairo::RefPtr<Cairo::Context> &cr,int x, int y, int PinEachHeight,int eachPinSpace, int n);
+    void draw_normal_pin(const Cairo::RefPtr<Cairo::Context> &cr,int x, int y, int PinEachHeight,int eachPinSpace, int n, int state);
+
     MouseOffset getMouseOffset(int x, int y);
     bool isMouseInside(int x, int y);
     bool isMouseHover(int x, int y);
