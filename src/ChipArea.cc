@@ -209,8 +209,6 @@ void ChipArea::on_my_motion(double x, double y)
 {
     mousePos = CordDouble{x - margin, y - margin};
 
-    // mouse positions are correct
-    std::cout << "mousex : " << mousePos.x << " mouseY :" << mousePos.y << std::endl;
     // hover
     for (int i = 0; i < chips->size(); i++)
     {
@@ -239,9 +237,9 @@ void ChipArea::on_my_motion(double x, double y)
             // for output pins
             for (int j = 0; j < chips->at(i).outputPins.size(); j++)
             {
-                if (chips->at(i).outputPins[j]->isHovered != chips->at(i).outputPins[j]->isMouseHovering(mousePos.x, mousePos.y, chips->at(i).structure->boundingBox->width))
+                if (chips->at(i).outputPins[j]->isHovered != chips->at(i).outputPins[j]->isMouseHovering(mousePos.x, mousePos.y))
                 {
-                    chips->at(i).outputPins[j]->isHovered = chips->at(i).outputPins[j]->isMouseHovering(mousePos.x, mousePos.y, chips->at(i).structure->boundingBox->width);
+                    chips->at(i).outputPins[j]->isHovered = chips->at(i).outputPins[j]->isMouseHovering(mousePos.x, mousePos.y);
                     canvas->queue_draw();
                 };
             }
@@ -604,27 +602,21 @@ void ChipArea::on_my_pressed(int n_press, double x, double y)
 
 void ChipArea::on_my_drag_begin(double start_x, double start_y)
 {
-    // std::cout << "Drag Begin" << std::endl;
     for (int i = 0; i < chips->size(); i++)
     {
 
         bool isInside = (*chips)[i].isMouseInside(start_x - margin, start_y - margin);
-        // std::cout << "Is Inside: " << isInside << std::endl;
         if (isInside)
         {
             draggedChip = &(*chips)[i];
 
-            // print start_x and start_y
-            // std::cout << "Start X: " << start_x - margin << " Start Y: " << start_y - margin << std::endl;
-
             MouseOffset offset = (*chips)[i].getMouseOffset(start_x - margin, start_y - margin);
             // print the mouse offset
-            // std::cout << "Offset X: " << offset.x << " Offset Y: " << offset.y << std::endl;
 
             double new_x = (start_x - margin) - (*chips)[i].structure->boundingBox->x - offset.x;
             double new_y = (start_y - margin) - (*chips)[i].structure->boundingBox->y - offset.y;
+
             // print new_x and new_y
-            // std::cout << "New X: " << new_x << " New Y: " << new_y << std::endl;
             (*chips)[i].structure->boundingBox->x += new_x;
             (*chips)[i].structure->boundingBox->y += new_y;
 
@@ -642,14 +634,10 @@ void ChipArea::on_my_drag_update(double offset_x, double offset_y)
     // offset_x	X offset, relative to the start point.
     // offset_y	Y offset, relative to the start point.
 
-    // std::cout << "Drag Update" << std::endl;
-    // std::cout << "Dragged Chip [update]: " << draggedChip << std::endl;
     if (draggedChip == nullptr)
     {
         return;
     }
-    // std::cout << "Offset X: " << offset_x << " Offset Y: " << offset_y << std::endl;
-    // std::cout << "Mouse X: " << draggedChip->structure->boundingBox->intial_x << " Mouse Y: " << draggedChip->structure->boundingBox->intial_y << std::endl;
 
     double new_x = draggedChip->structure->boundingBox->intial_x + offset_x;
     double new_y = draggedChip->structure->boundingBox->intial_y + offset_y;
@@ -662,7 +650,6 @@ void ChipArea::on_my_drag_update(double offset_x, double offset_y)
 
 void ChipArea::on_my_drag_end(double offset_x, double offset_y)
 {
-    // std::cout << "Drag End" << std::endl;
     // use draggedChip
     if (draggedChip == nullptr)
     {
@@ -867,10 +854,6 @@ void ChipArea::draw_on_canvas(const Cairo::RefPtr<Cairo::Context> &cr,
             cr->set_line_width(4);
             std::cout << "Drawing Wire" << std::endl;
             draw_wire_between(globalInputPins->at(i)->binds->at(j), cr);
-
-            // cr->move_to(globalInputPins->at(i)->radius + globalPinGap, globalInputPins->at(i)->y);
-            // cr->line_to(globalInputPins->at(i)->binds->at(j).input.x, globalInputPins->at(i)->binds->at(j).input.y);
-            // cr->stroke();
         }
     }
 
@@ -972,9 +955,9 @@ bool Pin::isInside(int mouseX, int mouseY)
     return false;
 }
 
-bool Pin::isMouseHovering(int mouseX, int mouseY, int width)
+bool Pin::isMouseHovering(int mouseX, int mouseY)
 {
-    return (mouseX >= (x + width - radius - hoverRange)) && (mouseX <= (x + width + radius + hoverRange)) && (mouseY >= (y - radius - hoverRange)) && (mouseY <= (y + radius + hoverRange));
+    return (mouseX >= (x - radius - hoverRange)) && (mouseX <= (x + radius + hoverRange)) && (mouseY >= (y - radius - hoverRange)) && (mouseY <= (y + radius + hoverRange));
 }
 
 void Pin::setRadius(int radius)
@@ -987,12 +970,32 @@ Cord Pin::getCord()
     return Cord{x, y};
 }
 
+void Pin::drawHovered(const Cairo::RefPtr<Cairo::Context> &cr)
+{
+    cr->set_source_rgb(255 / 255.0, 255 / 255.0, 255 / 255.0);
+    cr->arc(x, y, radius + 3, 0, 2 * M_PI);
+    cr->fill();
+}
+
+void Pin::drawNormal(const Cairo::RefPtr<Cairo::Context> &cr)
+{
+    if (state == 1)
+    {
+        cr->set_source_rgb(255 / 255.0, 255 / 255.0, 255 / 255.0);
+    }
+    else
+    {
+        cr->set_source_rgb(20 / 255.0, 20 / 255.0, 20 / 255.0);
+    }
+    cr->arc(x, y, radius, 0, 2 * M_PI);
+    cr->fill();
+}
+
 void OutputPin::bindTo(InputPin &inputPin)
 {
     Bind *bind = new Bind(inputPin);
     bind->output = this;
     inputPin.bind = bind;
-    // std::cout << "address of inputPin: " <<  &inputPin << std::endl;
     binds->push_back(bind);
 }
 
@@ -1121,7 +1124,6 @@ void Chip::run()
 
 bool Chip::isMouseInside(int x, int y)
 {
-    // std::cout << "X: " << x << " Y: " << y << " Chip X: " << structure->boundingBox->x << " Chip Y: " << structure->boundingBox->y << " Chip Width: " << structure->boundingBox->width << " Chip Height: " << structure->boundingBox->height << std::endl;
     return x >= structure->boundingBox->x && x <= structure->boundingBox->x + structure->boundingBox->width && y >= structure->boundingBox->y && y <= structure->boundingBox->y + structure->boundingBox->height;
 }
 
@@ -1130,26 +1132,6 @@ bool Chip::isMouseHover(int x, int y)
     return x >= (structure->boundingBox->x - hoverRange) && x <= (structure->boundingBox->x + structure->boundingBox->width + hoverRange) && y >= (structure->boundingBox->y - hoverRange) && y <= (structure->boundingBox->y + structure->boundingBox->height + hoverRange);
 }
 
-void Chip::draw_hovered_pin(const Cairo::RefPtr<Cairo::Context> &cr, int x, int y, int PinEachHeight, int eachPinSpace, int n)
-{
-    cr->set_source_rgb(255 / 255.0, 255 / 255.0, 255 / 255.0);
-    cr->arc(x, y + n * (PinEachHeight) + (PinEachHeight / 2), eachPinSpace - 1, 0, 2 * M_PI);
-    cr->fill();
-}
-
-void Chip::draw_normal_pin(const Cairo::RefPtr<Cairo::Context> &cr, int x, int y, int PinEachHeight, int eachPinSpace, int n, int state)
-{
-    if (state == 1)
-    {
-        cr->set_source_rgb(255 / 255.0, 255 / 255.0, 255 / 255.0);
-    }
-    else
-    {
-        cr->set_source_rgb(20 / 255.0, 20 / 255.0, 20 / 255.0);
-    }
-    cr->arc(x, y + n * (PinEachHeight) + (PinEachHeight / 2), eachPinSpace - 3, 0, 2 * M_PI);
-    cr->fill();
-}
 
 MouseOffset Chip::getMouseOffset(int x, int y)
 {
@@ -1180,7 +1162,7 @@ void Chip::draw(const Cairo::RefPtr<Cairo::Context> &cr)
     structure->boundingBox->width = width;
     structure->boundingBox->height = height;
 
-    if (Chip::isClicked)
+    if (this->isClicked)
     {
         cr->set_source_rgb(74 / 255.0, 74 / 255.0, 74 / 255.0);
         cr->rectangle(x - hoverRange, y - hoverRange, width + 2 * hoverRange, height + 2 * hoverRange);
@@ -1203,25 +1185,23 @@ void Chip::draw(const Cairo::RefPtr<Cairo::Context> &cr)
     int outputPinEachHeight = height / outputPins.size();
 
     // hovered pins
-    if (Chip::isHovered)
+    if (this->isHovered)
     {
         // input pins
         for (int n = 0; n < inputPins.size(); n++)
         {
             if (inputPins[n]->isHovered)
             {
-                std::cout << "pin is hovered";
-                draw_hovered_pin(cr, x, y, inputPinEachHeight, eachPinSpace, n);
                 inputPins[n]->setCord(x, y + n * (inputPinEachHeight) + (inputPinEachHeight / 2));
                 inputPins[n]->setRadius(eachPinSpace - 3);
+                inputPins[n]->drawHovered(cr);
             }
 
             else
             {
-                draw_normal_pin(cr, x, y, inputPinEachHeight, eachPinSpace, n, inputPins[n]->state);
-
                 inputPins[n]->setCord(x, y + n * (inputPinEachHeight) + (inputPinEachHeight / 2));
                 inputPins[n]->setRadius(eachPinSpace - 3);
+                inputPins[n]->drawNormal(cr);
             }
         }
 
@@ -1230,36 +1210,37 @@ void Chip::draw(const Cairo::RefPtr<Cairo::Context> &cr)
         {
             if (outputPins[n]->isHovered)
             {
-                draw_hovered_pin(cr, x + width, y, outputPinEachHeight, eachPinSpace, n);
-                outputPins[n]->setCord(x, y + n * (outputPinEachHeight) + (outputPinEachHeight / 2));
+                outputPins[n]->setCord(x + width, y + n * (outputPinEachHeight) + (outputPinEachHeight / 2));
                 outputPins[n]->setRadius(eachPinSpace - 3);
+                outputPins[n]->drawHovered(cr);
             }
             else
             {
-                draw_normal_pin(cr, x + width, y, outputPinEachHeight, eachPinSpace, n, outputPins[n]->state);
-                outputPins[n]->setCord(x, y + n * (outputPinEachHeight) + (outputPinEachHeight / 2));
+                outputPins[n]->setCord(x + width, y + n * (outputPinEachHeight) + (outputPinEachHeight / 2));
                 outputPins[n]->setRadius(eachPinSpace - 3);
+                outputPins[n]->drawNormal(cr);
             }
         }
     }
-    // non_hover pins
+
+    // non_hover chips
     else
     {
 
         // input pins
         for (int n = 0; n < inputPins.size(); n++)
         {
-            draw_normal_pin(cr, x, y, inputPinEachHeight, eachPinSpace, n, inputPins[n]->state);
             inputPins[n]->setCord(x, y + n * (inputPinEachHeight) + (inputPinEachHeight / 2));
             inputPins[n]->setRadius(eachPinSpace - 3);
+            inputPins[n]->drawNormal(cr);
         }
 
         // output pins
         for (int n = 0; n < outputPins.size(); n++)
         {
-            draw_normal_pin(cr, x + width, y, outputPinEachHeight, eachPinSpace, n, outputPins[n]->state);
-            outputPins[n]->setCord(x, y + n * (outputPinEachHeight) + (outputPinEachHeight / 2));
+            outputPins[n]->setCord(x + width, y + n * (outputPinEachHeight) + (outputPinEachHeight / 2));
             outputPins[n]->setRadius(eachPinSpace - 3);
+            outputPins[n]->drawNormal(cr);
         }
     }
 
