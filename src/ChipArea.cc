@@ -1,4 +1,3 @@
-
 #include "ChipArea.h"
 #include "ScreenStack.h"
 #include <X11/Xlib.h>
@@ -209,6 +208,46 @@ ChipArea::ChipArea(ScreenStack *stack)
 void ChipArea::on_my_motion(double x, double y)
 {
     mousePos = CordDouble{x - margin, y - margin};
+
+    // mouse positions are correct
+    std::cout << "mousex : " << mousePos.x << " mouseY :" << mousePos.y << std::endl;
+    // hover
+    for (int i = 0; i < chips->size(); i++)
+    {
+        // for chips
+        if (chips->at(i).isHovered != chips->at(i).isMouseHover(mousePos.x, mousePos.y))
+        {
+            chips->at(i).isHovered = chips->at(i).isMouseHover(mousePos.x, mousePos.y);
+            canvas->queue_draw();
+        }
+        else
+        {
+        }
+
+        // for input pins
+        if (chips->at(i).isHovered)
+        {
+            for (int j = 0; j < chips->at(i).inputPins.size(); j++)
+            {
+                if (chips->at(i).inputPins[j]->isHovered != chips->at(i).inputPins[j]->isMouseHovering(mousePos.x, mousePos.y))
+                {
+                    chips->at(i).inputPins[j]->isHovered = chips->at(i).inputPins[j]->isMouseHovering(mousePos.x, mousePos.y);
+                    canvas->queue_draw();
+                };
+            }
+
+            // for output pins
+            for (int j = 0; j < chips->at(i).outputPins.size(); j++)
+            {
+                if (chips->at(i).outputPins[j]->isHovered != chips->at(i).outputPins[j]->isMouseHovering(mousePos.x, mousePos.y, chips->at(i).structure->boundingBox->width))
+                {
+                    chips->at(i).outputPins[j]->isHovered = chips->at(i).outputPins[j]->isMouseHovering(mousePos.x, mousePos.y, chips->at(i).structure->boundingBox->width);
+                    canvas->queue_draw();
+                };
+            }
+        }
+    }
+
     if (draggedWire != nullptr)
     {
         canvas->queue_draw();
@@ -658,7 +697,6 @@ void ChipArea::create_chip(int index)
 
     OutputPin *outputPinNOT_Y = new OutputPin("Y", 0);
     // outputPinNOT_Y->bindToGlobalOutput(*globalOutputPins->at(0));
-
     // Connect the AND output to the NOT input to create NAND
 
     inputPins.push_back(inputPinAND_A);
@@ -919,12 +957,16 @@ void Pin::setCord(int xP, int yP)
 bool Pin::isInside(int mouseX, int mouseY)
 {
 
-    if (mouseX >= x - radius && mouseX <= x + radius && mouseY >= y - radius && mouseY <= y + radius)
+    if ((mouseX >= (x - radius)) && (mouseX <= (x + radius)) && (mouseY >= (y - radius)) && (mouseY <= (y + radius)))
     {
-        std::cout << "Mouse is inside the pin" << std::endl;
         return true;
     }
     return false;
+}
+
+bool Pin::isMouseHovering(int mouseX, int mouseY, int width)
+{
+    return (mouseX >= (x + width - radius - hoverRange)) && (mouseX <= (x + width + radius + hoverRange)) && (mouseY >= (y - radius - hoverRange)) && (mouseY <= (y + radius + hoverRange));
 }
 
 void Pin::setRadius(int radius)
@@ -1074,26 +1116,31 @@ bool Chip::isMouseInside(int x, int y)
     return x >= structure->boundingBox->x && x <= structure->boundingBox->x + structure->boundingBox->width && y >= structure->boundingBox->y && y <= structure->boundingBox->y + structure->boundingBox->height;
 }
 
-// static Chip* create_chip(ChipArea *chipArea){
-// global input pins of chips area will be input pins of chip
-// global output pins of chips area will be output pins of chip
-// chip type will be CUSTOM
+bool Chip::isMouseHover(int x, int y)
+{
+    return x >= (structure->boundingBox->x - hoverRange) && x <= (structure->boundingBox->x + structure->boundingBox->width + hoverRange) && y >= (structure->boundingBox->y - hoverRange) && y <= (structure->boundingBox->y + structure->boundingBox->height + hoverRange);
+}
 
-// std::vector<GlobalInputPin*> *globalInputPins;
-// // deep copy of all global input pins
-// for(int i = 0;i < chipArea->globalInputPins->size();i++){
-//     GlobalInputPin *p = new GlobalInputPin(chipArea->globalInputPins->at(i)->index, chipArea->globalInputPins->at(i)->y);
-//     // p->state = chipArea->globalInputPins->at(i)->state;
-//     std::vector<Bind> *binds;
-//     for(int j = 0;j < chipArea->globalInputPins->at(i)->binds->size();j++){
-//         Bind bind = chipArea->globalInputPins->at(i)->binds->at(j);
-//         binds->push_back(bind);
-//     }
+void Chip::draw_hovered_pin(const Cairo::RefPtr<Cairo::Context> &cr, int x, int y, int PinEachHeight, int eachPinSpace, int n)
+{
+    cr->set_source_rgb(255 / 255.0, 255 / 255.0, 255 / 255.0);
+    cr->arc(x, y + n * (PinEachHeight) + (PinEachHeight / 2), eachPinSpace - 1, 0, 2 * M_PI);
+    cr->fill();
+}
 
-//     globalInputPins->push_back(p);
-// }
-
-// }
+void Chip::draw_normal_pin(const Cairo::RefPtr<Cairo::Context> &cr, int x, int y, int PinEachHeight, int eachPinSpace, int n, int state)
+{
+    if (state == 1)
+    {
+        cr->set_source_rgb(255 / 255.0, 255 / 255.0, 255 / 255.0);
+    }
+    else
+    {
+        cr->set_source_rgb(20 / 255.0, 20 / 255.0, 20 / 255.0);
+    }
+    cr->arc(x, y + n * (PinEachHeight) + (PinEachHeight / 2), eachPinSpace - 3, 0, 2 * M_PI);
+    cr->fill();
+}
 
 MouseOffset Chip::getMouseOffset(int x, int y)
 {
@@ -1139,75 +1186,88 @@ void Chip::draw(const Cairo::RefPtr<Cairo::Context> &cr)
     cr->rectangle(x, y, width, height);
     cr->fill();
 
-    // draw the input pins
+    // drawing the pins
     int eachPinSpace = (height / (inputPins.size() > outputPins.size() ? inputPins.size() : outputPins.size())) / 2;
+    int inputPinEachHeight = height / inputPins.size();
+    int outputPinEachHeight = height / outputPins.size();
 
-    for (int i = 0; i < inputPins.size(); i++)
+    // hovered pins
+    if (Chip::isHovered)
     {
-        if (inputPins[i]->state == 1)
+        // input pins
+        for (int n = 0; n < inputPins.size(); n++)
         {
-            cr->set_source_rgb(255 / 255.0, 255 / 255.0, 255 / 255.0);
+            if (inputPins[n]->isHovered)
+            {
+                std::cout << "pin is hovered";
+                draw_hovered_pin(cr, x, y, inputPinEachHeight, eachPinSpace, n);
+                inputPins[n]->setCord(x, y + n * (inputPinEachHeight) + (inputPinEachHeight / 2));
+                inputPins[n]->setRadius(eachPinSpace - 3);
+            }
+
+            else
+            {
+                draw_normal_pin(cr, x, y, inputPinEachHeight, eachPinSpace, n, inputPins[n]->state);
+
+                inputPins[n]->setCord(x, y + n * (inputPinEachHeight) + (inputPinEachHeight / 2));
+                inputPins[n]->setRadius(eachPinSpace - 3);
+            }
         }
-        else
+
+        // output pins
+        for (int n = 0; n < outputPins.size(); n++)
         {
-            cr->set_source_rgb(20 / 255.0, 20 / 255.0, 20 / 255.0);
+            if (outputPins[n]->isHovered)
+            {
+                draw_hovered_pin(cr, x + width, y, outputPinEachHeight, eachPinSpace, n);
+                outputPins[n]->setCord(x, y + n * (outputPinEachHeight) + (outputPinEachHeight / 2));
+                outputPins[n]->setRadius(eachPinSpace - 3);
+            }
+            else
+            {
+                draw_normal_pin(cr, x + width, y, outputPinEachHeight, eachPinSpace, n, outputPins[n]->state);
+                outputPins[n]->setCord(x, y + n * (outputPinEachHeight) + (outputPinEachHeight / 2));
+                outputPins[n]->setRadius(eachPinSpace - 3);
+            }
         }
-        // cr->arc(20, i * gapper + gapper / 2, 5, 0, 2 * M_PI);
-        int inputPinEachHeight = height / inputPins.size();
-        cr->arc(x, y + i * (inputPinEachHeight) + (inputPinEachHeight / 2), eachPinSpace - 3, 0, 2 * M_PI);
+    }
+    // non_hover pins
+    else
+    {
 
-        cr->fill();
+        // input pins
+        for (int n = 0; n < inputPins.size(); n++)
+        {
+            draw_normal_pin(cr, x, y, inputPinEachHeight, eachPinSpace, n, inputPins[n]->state);
+            inputPins[n]->setCord(x, y + n * (inputPinEachHeight) + (inputPinEachHeight / 2));
+            inputPins[n]->setRadius(eachPinSpace - 3);
+        }
 
-        cr->set_source_rgb(1.0, 1.0, 1.0);
-        cr->move_to(x + 15, y + i * (inputPinEachHeight) + (inputPinEachHeight / 2) + 3);
-        cr->set_font_size(14);
-        cr->show_text(inputPins[i]->name);
-        inputPins[i]->setCord(x, y + i * (inputPinEachHeight) + (inputPinEachHeight / 2));
-        inputPins[i]->setRadius(eachPinSpace - 3);
-
-        // std::cout << "Input Pin:" << std::endl;
-        // inputPins[i]->printCord();
-        // std::cout << "x:" << inputPins[i]->x << " y:" << inputPins[i]->y << std::endl;
+        // output pins
+        for (int n = 0; n < outputPins.size(); n++)
+        {
+            draw_normal_pin(cr, x + width, y, outputPinEachHeight, eachPinSpace, n, outputPins[n]->state);
+            outputPins[n]->setCord(x, y + n * (outputPinEachHeight) + (outputPinEachHeight / 2));
+            outputPins[n]->setRadius(eachPinSpace - 3);
+        }
     }
 
-    // draw the output pins
-    for (int i = 0; i < outputPins.size(); i++)
+    // text for input pins
+    for (int n = 0; n < inputPins.size(); n++)
     {
-        if (outputPins[i]->state == 1)
-        {
-            cr->set_source_rgb(255 / 255.0, 255 / 255.0, 255 / 255.0);
-        }
-        else
-        {
-            cr->set_source_rgb(20 / 255.0, 20 / 255.0, 20 / 255.0);
-        }
-        // cr->arc(80, i * gapper + gapper / 2, 5, 0, 2 * M_PI);
-        int outputPinEachHeight = height / outputPins.size();
-        cr->arc(x + width, y + i * (outputPinEachHeight) + (outputPinEachHeight / 2), eachPinSpace - 3, 0, 2 * M_PI);
-        cr->fill();
-
         cr->set_source_rgb(1.0, 1.0, 1.0);
-        cr->move_to(x + width - 25, y + i * (outputPinEachHeight) + (outputPinEachHeight / 2) + 3);
+        cr->move_to(x + 15, y + n * (inputPinEachHeight) + (inputPinEachHeight / 2) + 3);
         cr->set_font_size(14);
-        cr->show_text(outputPins[i]->name);
-        outputPins[i]->setCord(x + width, y + i * (outputPinEachHeight) + (outputPinEachHeight / 2));
-        outputPins[i]->setRadius(eachPinSpace - 3);
+        cr->show_text(inputPins[n]->name);
+    }
 
-        // std::cout << "Output Pin:" << std::endl;
-        // outputPins[i]->printCord();
-
-        // std::cout << "x:" << outputPins[i]->x << " y:" << outputPins[i]->y << std::endl;
-        // // std::cout << "Size:" << outputPins[i]->binds->size() << std::endl;
-        // if (outputPins[i]->binds->size() > 0)
-        // {
-        //     // std::cout << "Bind \n";
-
-        //     for (int j = 0; j < outputPins[i]->binds->size(); j++)
-        //     {
-        //         // std::cout << "address of inputPin: " << outputPins[i]->binds->at(j).input << std::endl;
-        //         outputPins[i]->binds->at(j).printConnection();
-        //     }
-        // }
+    // text for output pins
+    for (int n = 0; n < outputPins.size(); n++)
+    {
+        cr->set_source_rgb(1.0, 1.0, 1.0);
+        cr->move_to(x + width - 25, y + n * (outputPinEachHeight) + (outputPinEachHeight / 2) + 3);
+        cr->set_font_size(14);
+        cr->show_text(inputPins[n]->name);
     }
 
     // draw line between input and output pins
@@ -1310,7 +1370,6 @@ ChipSelectorMenu::ChipSelectorMenu(int width, int height, ScreenStack *scrn_stac
     save->set_css_classes({"action-menu-btn"});
     save->set_size_request(300, 50);
     save->set_label("SAVE");
-
     ActionBox->append(*quit);
     ActionBox->append(*library);
     ActionBox->append(*save);
