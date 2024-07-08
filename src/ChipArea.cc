@@ -108,8 +108,8 @@ void draw_wire_between(BindToGlobalOutPut *bind, const Cairo::RefPtr<Cairo::Cont
 ChipArea::ChipArea(ScreenStack *stack)
 {
     this->stack = stack;
-    int width = GetSystemMetrics(SM_CXSCREEN);
-    int height = GetSystemMetrics(SM_CYSCREEN);
+    this->width = GetSystemMetrics(SM_CXSCREEN);
+    this->height = GetSystemMetrics(SM_CYSCREEN);
 
     overlay = Gtk::manage(new Gtk::Overlay());
     Gtk::Box *wrapper = Gtk::manage(new Gtk::Box(Gtk::Orientation::HORIZONTAL, 0));
@@ -190,7 +190,7 @@ ChipArea::ChipArea(ScreenStack *stack)
 
     // chipSelector UI
     ActionMenu = new ChipSelectorMenu(width, height, stack);
-    chipSelector = Gtk::manage(new ChipSelectorUI(ActionMenu));
+    chipSelector = Gtk::manage(new ChipSelectorUI(this,ActionMenu));
 
     ActionMenu->hide();
     ActionMenu->visible = false;
@@ -659,10 +659,9 @@ void ChipArea::on_my_drag_end(double offset_x, double offset_y)
     canvas->queue_draw();
 }
 
-void ChipArea::create_chip(int index)
+void ChipArea::createAndChip(int index, int posX, int posY)
 {
-    // Create AND gate
-    ChipStructure *structureAND = new ChipStructure(new ChipBoundingBox{100, 100, 200, 50});
+    ChipStructure *structureAND = new ChipStructure(new ChipBoundingBox{100, 100, posX, posY});
     std::vector<InputPin *> inputPins;
     std::vector<OutputPin *> outputPins;
 
@@ -670,10 +669,53 @@ void ChipArea::create_chip(int index)
     InputPin *inputPinAND_B = new InputPin("B", 1);
     OutputPin *outputPinAND_Y = new OutputPin("Y", 0);
 
+    inputPins.push_back(inputPinAND_A);
+    inputPins.push_back(inputPinAND_B);
+    outputPins.push_back(outputPinAND_Y);
+
+    Chip *chipAND = new Chip(structureAND, inputPins, outputPins, "AND");
+    chipAND->setChipType(ChipType::AND);
+    chips->push_back(*chipAND);
+    canvas->queue_draw();
+
+}
+
+void ChipArea::createNotChip(int index, int posX, int posY )
+{
+    ChipStructure *structureNOT = new ChipStructure(new ChipBoundingBox{100, 100, posX, posY});
+
+    InputPin *inputPinNOT_A = new InputPin("A", 0);
+    OutputPin *outputPinNOT_Y = new OutputPin("Y", 0);
+
+    
+    std::vector<InputPin *> inputPins;
+    std::vector<OutputPin *> outputPins;
+
+    inputPins.push_back(inputPinNOT_A);
+    outputPins.push_back(outputPinNOT_Y);
+
+    Chip *chiNOT = new Chip(structureNOT, inputPins, outputPins, "NOT");
+    chiNOT->setChipType(ChipType::NOT);
+    chips->push_back(*chiNOT);
+    canvas->queue_draw();
+}
+
+void ChipArea::create_chip(int index)
+{
+    // // Create AND gate
+    // ChipStructure *structureAND = new ChipStructure(new ChipBoundingBox{100, 100, 200, 50});
+    // std::vector<InputPin *> inputPins;
+    // std::vector<OutputPin *> outputPins;
+
+    // InputPin *inputPinAND_A = new InputPin("A", 0);
+    // InputPin *inputPinAND_B = new InputPin("B", 1);
+    // OutputPin *outputPinAND_Y = new OutputPin("Y", 0);
+
     // globalInputPins->at(0)->bindTo(*inputPinAND_A);
     // globalInputPins->at(1)->bindTo(*inputPinAND_B);
 
     InputPin *inputPinNOT_A = new InputPin("A", 0);
+
 
     // outputPinAND_Y->bindTo(*inputPinNOT_A);
 
@@ -686,22 +728,21 @@ void ChipArea::create_chip(int index)
     // outputPinNOT_Y->bindToGlobalOutput(*globalOutputPins->at(0));
     // Connect the AND output to the NOT input to create NAND
 
-    inputPins.push_back(inputPinAND_A);
-    inputPins.push_back(inputPinAND_B);
-    outputPins.push_back(outputPinAND_Y);
+    // inputPins.push_back(inputPinAND_A);
+    // inputPins.push_back(inputPinAND_B);
+    // outputPins.push_back(outputPinAND_Y);
 
     inputPins2.push_back(inputPinNOT_A);
     outputPins2.push_back(outputPinNOT_Y);
 
     // Create chips and add to chips vector
-    Chip *chipAND = new Chip(structureAND, inputPins, outputPins, "AND");
-    chipAND->setChipType(ChipType::AND);
+    // Chip *chipAND = new Chip(structureAND, inputPins, outputPins, "AND");
+    // chipAND->setChipType(ChipType::AND);
+
     Chip *chipNOT = new Chip(structureNOT, inputPins2, outputPins2, "NOT");
     chipNOT->setChipType(ChipType::NOT);
 
-    chips->push_back(*chipAND);
     chips->push_back(*chipNOT);
-
     run();
 
     canvas->queue_draw();
@@ -873,18 +914,39 @@ void ChipArea::draw_on_canvas(const Cairo::RefPtr<Cairo::Context> &cr,
     }
 }
 
-ChipSelectorUI::ChipSelectorUI(ChipSelectorMenu *menu)
+ChipSelectorUI::ChipSelectorUI(ChipArea *area, ChipSelectorMenu *menu)
 {
     set_css_classes({"chip-selector"});
     set_orientation(Gtk::Orientation::HORIZONTAL);
     set_spacing(0);
 
+
+    //menu button
     menu_btn = Gtk::manage(new Gtk::Button());
     menu_btn->set_label("MENU");
     menu_btn->set_size_request(100, 50);
     menu_btn->set_css_classes({"chip-menu-btn", "chip-btn"});
     menu_btn->signal_clicked().connect(sigc::mem_fun(*menu, ChipSelectorMenu::showMenu));
     append(*menu_btn);
+
+
+    //and gate
+    Gtk::Button *and_btn;
+    and_btn = Gtk::manage(new Gtk::Button());
+    and_btn->set_label("AND");
+    and_btn->set_size_request(80, 50);
+    and_btn->set_css_classes( {"chip-btn"});
+    and_btn->signal_clicked().connect(sigc::bind(sigc::mem_fun(*area, ChipArea::createAndChip),0,50, (area->height)-300));
+    append(*and_btn);
+
+    //not gate
+    Gtk::Button *not_btn;
+    not_btn = Gtk::manage(new Gtk::Button());
+    not_btn->set_label("NOT");
+    not_btn->set_size_request(80, 50);
+    not_btn->set_css_classes( {"chip-btn"});
+    not_btn->signal_clicked().connect(sigc::bind(sigc::mem_fun(*area, ChipArea::createNotChip),0,250, (area->height)-300));
+    append(*not_btn);
 
     for (int i = 0; i < 5; i++)
     {

@@ -31,6 +31,9 @@ class ChipArea : public Gtk::Frame
 {
 public:
     ChipArea(ScreenStack *stack);
+    int width;
+    int height;
+
     Gtk::Box *chipSelector;
     Gtk::Box *creationArea;
     Gtk::Grid *container;
@@ -81,6 +84,10 @@ public:
 
     void clear_canvas(const Cairo::RefPtr<Cairo::Context> &cr);
     void create_chip(int index);
+    void createAndChip(int index, int posX, int posY);
+    void createNotChip(int index, int posX, int posY);
+
+
 
     void clear_actions();
 };
@@ -88,10 +95,11 @@ public:
 class ChipSelectorUI : public Gtk::Box
 {
 public:
-    ChipSelectorUI(ChipSelectorMenu *menu);
+    ChipSelectorUI(ChipArea *area, ChipSelectorMenu *menu);
     ChipSelectorMenu *menu;
     Gtk::Button *chips[5];
     Gtk::Button *menu_btn;
+    
     int test;
     int selected_chip = -1;
 
