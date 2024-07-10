@@ -1,0 +1,23 @@
+# Global Input -> 2
+# Global Output -> 1
+# Chips
+# start
+1. And
+InputPin -> 2
+OutputPin -> 1
+Type -> INBUILT
+2. NOT
+InputPin -> 1
+OutputPin -> 1
+Type -> INBUILT
+# end
+# Binds
+# start
+# GI to GO -> 0
+GI[0] -> C[0][0]
+GI[1] -> C[0][1]
+C[0][0] -> C[1][0]
+C[1][0] -> GO[0]
+# end
+
+

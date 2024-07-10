@@ -82,6 +82,8 @@ public:
     void clear_canvas(const Cairo::RefPtr<Cairo::Context> &cr);
     void create_chip(int index);
 
+    void save_circuit(std::string &name);
+
     void clear_actions();
 };
 
@@ -301,6 +303,7 @@ public:
     void hideMenu(int, int, int);
     void showMenu();
     void quit();
+    void save_circuit();
 };
 
 

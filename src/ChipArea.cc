@@ -1364,6 +1364,7 @@ ChipSelectorMenu::ChipSelectorMenu(int width, int height, ScreenStack *scrn_stac
     save->set_css_classes({"action-menu-btn"});
     save->set_size_request(300, 50);
     save->set_label("SAVE");
+    save->signal_clicked().connect(sigc::mem_fun(*this, ChipSelectorMenu::save_circuit));
     ActionBox->append(*quit);
     ActionBox->append(*library);
     ActionBox->append(*save);
@@ -1394,4 +1395,8 @@ void ChipSelectorMenu::quit()
 {
     scrn_stack->stack->set_transition_type(Gtk::StackTransitionType::SLIDE_RIGHT);
     scrn_stack->show_home_menu();
+}
+void ChipSelectorMenu::save_circuit(){
+    std::string name = "NAND";
+    scrn_stack->chipArea->save_circuit(name);
 }
