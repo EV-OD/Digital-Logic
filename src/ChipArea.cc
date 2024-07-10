@@ -781,7 +781,7 @@ void ChipArea::createAndChip(int index, int posX, int posY)
 
     Chip *chipAND = new Chip(structureAND, inputPins, outputPins, "AND");
     chipAND->setChipType(ChipType::AND);
-    chips->push_back(*chipAND);
+    addChip(chipAND);
     canvas->queue_draw();
 }
 
@@ -800,7 +800,7 @@ void ChipArea::createNotChip(int index, int posX, int posY)
 
     Chip *chiNOT = new Chip(structureNOT, inputPins, outputPins, "NOT");
     chiNOT->setChipType(ChipType::NOT);
-    chips->push_back(*chiNOT);
+    addChip(chiNOT);
     canvas->queue_draw();
 }
 
@@ -823,6 +823,13 @@ void ChipArea::run()
             if (globalInputPins->at(i)->binds->at(j)->input.chip != nullptr)
             {
                 chips.push_back(globalInputPins->at(i)->binds->at(j)->input.chip);
+            }
+        }
+        for(int j = 0;j< globalInputPins->at(i)->gbinds->size();j++){
+            globalInputPins->at(i)->gbinds->at(j)->output.state = globalInputPins->at(i)->state;
+            if (globalInputPins->at(i)->gbinds->at(j)->output.chip != nullptr)
+            {
+                chips.push_back(globalInputPins->at(i)->gbinds->at(j)->output.chip);
             }
         }
     }
@@ -1537,4 +1544,5 @@ void ChipSelectorMenu::quit()
 void ChipSelectorMenu::save_circuit(){
     std::string name = "NAND";
     scrn_stack->chipArea->save_circuit(name);
+    hideMenu();
 }

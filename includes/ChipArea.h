@@ -44,6 +44,7 @@ public:
     Gtk::Overlay *overlay;
 
     std::vector<Chip> *chips;
+    void addChip(Chip *chip);
     Chip *draggedChip;
     GlobalInputPin *draggedGlobalInputPin = nullptr;
     OutputPin *draggedOutputPin = nullptr;
@@ -253,6 +254,7 @@ public:
     std::vector<InputPin *> inputPins;
     std::vector<OutputPin *> outputPins;
     std::string name;
+    int index;
     void draw(const Cairo::RefPtr<Cairo::Context> &cr);
     // void draw_hovered_pin(const Cairo::RefPtr<Cairo::Context> &cr,int x, int y, int PinEachHeight,int eachPinSpace, int n);
     // void draw_normal_pin(const Cairo::RefPtr<Cairo::Context> &cr,int x, int y, int PinEachHeight,int eachPinSpace, int n, int state);

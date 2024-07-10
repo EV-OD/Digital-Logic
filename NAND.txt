@@ -14,10 +14,11 @@ Type -> INBUILT
 # Binds
 # start
 # GI to GO -> 0
-GI[0] -> C[0][0]
-GI[1] -> C[0][1]
+# GI to CI -> 2
+GI[0] -> CI[0][0]
+GI[1] -> CI[0][1]
+# CO to CI -> 1
 C[0][0] -> C[1][0]
-C[1][0] -> GO[0]
+# CO to GO -> 1
+CO[1][0] -> GO[0]
 # end
-
-
