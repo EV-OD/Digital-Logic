@@ -108,8 +108,8 @@ void draw_wire_between(BindToGlobalOutPut *bind, const Cairo::RefPtr<Cairo::Cont
 ChipArea::ChipArea(ScreenStack *stack)
 {
     this->stack = stack;
-    int width = GetSystemMetrics(SM_CXSCREEN);
-    int height = GetSystemMetrics(SM_CYSCREEN);
+    this->width = GetSystemMetrics(SM_CXSCREEN);
+    this->height = GetSystemMetrics(SM_CYSCREEN);
 
     overlay = Gtk::manage(new Gtk::Overlay());
     Gtk::Box *wrapper = Gtk::manage(new Gtk::Box(Gtk::Orientation::HORIZONTAL, 0));
@@ -157,7 +157,7 @@ ChipArea::ChipArea(ScreenStack *stack)
 
     m_GestureClick = Gtk::GestureClick::create();
     m_GestureClick->set_propagation_phase(Gtk::PropagationPhase::BUBBLE);
-    m_GestureClick->signal_pressed().connect(sigc::mem_fun(*this, &ChipArea::on_my_pressed));
+    m_GestureClick->signal_pressed().connect(sigc::mem_fun(*this, &ChipArea::onMyLeftClick));
     add_controller(m_GestureClick);
 
     // connect it with canvas
@@ -186,11 +186,9 @@ ChipArea::ChipArea(ScreenStack *stack)
 
     globalOutputPins->push_back(globalOutputPin);
 
-    create_chip(0);
-
     // chipSelector UI
     ActionMenu = new ChipSelectorMenu(width, height, stack);
-    chipSelector = Gtk::manage(new ChipSelectorUI(ActionMenu));
+    chipSelector = Gtk::manage(new ChipSelectorUI(this, ActionMenu));
 
     ActionMenu->hide();
     ActionMenu->visible = false;
@@ -205,53 +203,152 @@ ChipArea::ChipArea(ScreenStack *stack)
     set_child(*overlay);
 }
 
-void ChipArea::on_my_motion(double x, double y)
+bool ChipArea::isHoveringLine(CordDouble mousePos, CordDouble A, CordDouble B, double tolerance)
 {
-    mousePos = CordDouble{x - margin, y - margin};
+    double dx = B.x - A.x;
+    double dy = B.y - A.y;
+    if (dx == 0)
+    {
+        // Handle vertical line case (special handling)
+        return fabs(mousePos.x - A.x) <= tolerance;
+    }
 
-    // hover
+    double distance = fabs(dy * mousePos.x - dx * mousePos.y + B.x * A.y - B.y * A.x) / sqrt(pow(dy, 2) + pow(dx, 2));
+
+    // check if withing the tolerance  and mouse within the segment , either A or B can be greater w.r.t X-axis
+    return distance <= tolerance && ((mousePos.x > A.x && mousePos.x < B.x) || (mousePos.x > B.x && mousePos.x < A.x));
+}
+
+bool ChipArea::isHoveringWire(CordDouble MousePos, Wire *wire, double tolerance)
+{
+    if (wire->breakPoints->size() > 1)
+    {
+
+        for (int point = 0; point < wire->breakPoints->size() - 1; point++)
+        {
+            if (isHoveringLine(mousePos, wire->breakPoints->at(point), wire->breakPoints->at(point + 1), tolerance))
+            {
+                return true;
+            };
+        }
+    }
+    return false;
+}
+
+void ChipArea::updateHoveringChipsPins(CordDouble mousePos)
+{
     for (int i = 0; i < chips->size(); i++)
     {
         // for chips
         if (chips->at(i).isHovered != chips->at(i).isMouseHover(mousePos.x, mousePos.y))
         {
             chips->at(i).isHovered = chips->at(i).isMouseHover(mousePos.x, mousePos.y);
-            canvas->queue_draw();
+            shouldQueueDraw = true;
         }
         else
         {
         }
 
         // for input pins
-        if (chips->at(i).isHovered)
+        for (int j = 0; j < chips->at(i).inputPins.size(); j++)
         {
-            for (int j = 0; j < chips->at(i).inputPins.size(); j++)
+            if (chips->at(i).inputPins[j]->isHovered != chips->at(i).inputPins[j]->isHovering(mousePos.x, mousePos.y))
             {
-                if (chips->at(i).inputPins[j]->isHovered != chips->at(i).inputPins[j]->isMouseHovering(mousePos.x, mousePos.y))
-                {
-                    chips->at(i).inputPins[j]->isHovered = chips->at(i).inputPins[j]->isMouseHovering(mousePos.x, mousePos.y);
-                    canvas->queue_draw();
-                };
-            }
+                chips->at(i).inputPins[j]->isHovered = chips->at(i).inputPins[j]->isHovering(mousePos.x, mousePos.y);
+                shouldQueueDraw = true;
+            };
+        }
 
-            // for output pins
-            for (int j = 0; j < chips->at(i).outputPins.size(); j++)
+        // for output pins
+        for (int j = 0; j < chips->at(i).outputPins.size(); j++)
+        {
+            if (chips->at(i).outputPins[j]->isHovered != chips->at(i).outputPins[j]->isHovering(mousePos.x, mousePos.y))
             {
-                if (chips->at(i).outputPins[j]->isHovered != chips->at(i).outputPins[j]->isMouseHovering(mousePos.x, mousePos.y))
-                {
-                    chips->at(i).outputPins[j]->isHovered = chips->at(i).outputPins[j]->isMouseHovering(mousePos.x, mousePos.y);
-                    canvas->queue_draw();
-                };
+                chips->at(i).outputPins[j]->isHovered = chips->at(i).outputPins[j]->isHovering(mousePos.x, mousePos.y);
+                shouldQueueDraw = true;
             }
         }
     }
+}
+
+void ChipArea::updateHoveringWires(CordDouble mousePos)
+{
+    int tolerance = 10;
+    for (int i = 0; i < chips->size(); i++)
+    {
+        for (int j = 0; j < chips->at(i).outputPins.size(); j++)
+        {
+
+            // hover for wires
+            if (chips->at(i).outputPins[j]->binds->size() != 0)
+            {
+                for (int bind = 0; bind < (chips->at(i).outputPins[j]->binds->size()); bind++)
+                {
+                    if (chips->at(i).outputPins[j]->binds->at(bind)->wire != nullptr)
+                    {
+                        if (chips->at(i).outputPins[j]->binds->at(bind)->isHovered != isHoveringWire(mousePos, chips->at(i).outputPins[j]->binds->at(bind)->wire, tolerance))
+                        {
+                            chips->at(i).outputPins[j]->binds->at(bind)->isHovered = isHoveringWire(mousePos, chips->at(i).outputPins[j]->binds->at(bind)->wire, tolerance);
+                            shouldQueueDraw = true;
+                            break; // break after change to be made is found
+                        }
+                    }
+                }
+            }
+
+            // wires from chip's outputs to globaloutputs
+            if (chips->at(i).outputPins[j]->bindsToGlobalOutput->size() > 0)
+            {
+                for (int bindToGlobalOutput = 0; bindToGlobalOutput < (chips->at(i).outputPins[j]->bindsToGlobalOutput->size()); bindToGlobalOutput++)
+                {
+
+                    if (chips->at(i).outputPins[j]->bindsToGlobalOutput->at(bindToGlobalOutput)->wire != nullptr)
+                    {
+                        if (chips->at(i).outputPins[j]->bindsToGlobalOutput->at(bindToGlobalOutput)->isHovered != isHoveringWire(mousePos, chips->at(i).outputPins[j]->bindsToGlobalOutput->at(bindToGlobalOutput)->wire, tolerance))
+                        {
+                            chips->at(i).outputPins[j]->bindsToGlobalOutput->at(bindToGlobalOutput)->isHovered = isHoveringWire(mousePos, chips->at(i).outputPins[j]->bindsToGlobalOutput->at(bindToGlobalOutput)->wire, tolerance);
+                            shouldQueueDraw = true;
+                            break; // break after change to be made is found
+                        }
+                    }
+                }
+            }
+
+            for (int pin = 0; pin < globalInputPins->size(); pin++)
+            {
+                for (int bind = 0; bind < globalInputPins->at(pin)->binds->size(); bind++)
+                {
+                    if (globalInputPins->at(pin)->binds->at(bind)->isHovered != isHoveringWire(mousePos, globalInputPins->at(pin)->binds->at(bind)->wire, tolerance))
+                    {
+                        globalInputPins->at(pin)->binds->at(bind)->isHovered = isHoveringWire(mousePos, globalInputPins->at(pin)->binds->at(bind)->wire, tolerance);
+                        std::cout << "hovered" << std::endl;
+                        shouldQueueDraw = true;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}
+
+void ChipArea::on_my_motion(double x, double y)
+{
+    mousePos = CordDouble{x - margin, y - margin};
+    shouldQueueDraw = false;
+
+    updateHoveringChipsPins(mousePos);
+    updateHoveringWires(mousePos);
 
     if (draggedWire != nullptr)
+    {
+        shouldQueueDraw = true;
+    }
+
+    if (shouldQueueDraw)
     {
         canvas->queue_draw();
     }
 }
-
 void ChipArea::clear_actions()
 {
     draggedGlobalInputPin = nullptr;
@@ -276,7 +373,7 @@ bool ChipArea::on_my_key_pressed(guint keyval, guint /*keycode*/, Gdk::ModifierT
     return false; // Event has not been handled
 }
 
-void ChipArea::on_my_pressed(int n_press, double x, double y)
+void ChipArea::onMyLeftClick(int n_press, double x, double y)
 {
     if (draggedGlobalInputPin != nullptr)
     {
@@ -541,6 +638,15 @@ void ChipArea::on_my_pressed(int n_press, double x, double y)
             //     }
             // }
 
+            if (chips->at(i).isMouseInside(x - margin, y - margin))
+            {
+                chips->at(i).isClicked = true;
+            }
+            else
+            {
+                chips->at(i).isClicked = false;
+            }
+
             for (int j = 0; j < chips->at(i).outputPins.size(); j++)
             {
 
@@ -659,10 +765,9 @@ void ChipArea::on_my_drag_end(double offset_x, double offset_y)
     canvas->queue_draw();
 }
 
-void ChipArea::create_chip(int index)
+void ChipArea::createAndChip(int index, int posX, int posY)
 {
-    // Create AND gate
-    ChipStructure *structureAND = new ChipStructure(new ChipBoundingBox{100, 100, 200, 50});
+    ChipStructure *structureAND = new ChipStructure(new ChipBoundingBox{100, 100, posX, posY});
     std::vector<InputPin *> inputPins;
     std::vector<OutputPin *> outputPins;
 
@@ -670,40 +775,32 @@ void ChipArea::create_chip(int index)
     InputPin *inputPinAND_B = new InputPin("B", 1);
     OutputPin *outputPinAND_Y = new OutputPin("Y", 0);
 
-    // globalInputPins->at(0)->bindTo(*inputPinAND_A);
-    // globalInputPins->at(1)->bindTo(*inputPinAND_B);
-
-    InputPin *inputPinNOT_A = new InputPin("A", 0);
-
-    // outputPinAND_Y->bindTo(*inputPinNOT_A);
-
-    // Create NOT gate
-    ChipStructure *structureNOT = new ChipStructure(new ChipBoundingBox{100, 100, 400, 60});
-    std::vector<InputPin *> inputPins2;
-    std::vector<OutputPin *> outputPins2;
-
-    OutputPin *outputPinNOT_Y = new OutputPin("Y", 0);
-    // outputPinNOT_Y->bindToGlobalOutput(*globalOutputPins->at(0));
-    // Connect the AND output to the NOT input to create NAND
-
     inputPins.push_back(inputPinAND_A);
     inputPins.push_back(inputPinAND_B);
     outputPins.push_back(outputPinAND_Y);
 
-    inputPins2.push_back(inputPinNOT_A);
-    outputPins2.push_back(outputPinNOT_Y);
-
-    // Create chips and add to chips vector
     Chip *chipAND = new Chip(structureAND, inputPins, outputPins, "AND");
     chipAND->setChipType(ChipType::AND);
-    Chip *chipNOT = new Chip(structureNOT, inputPins2, outputPins2, "NOT");
-    chipNOT->setChipType(ChipType::NOT);
-
     chips->push_back(*chipAND);
-    chips->push_back(*chipNOT);
+    canvas->queue_draw();
+}
 
-    run();
+void ChipArea::createNotChip(int index, int posX, int posY)
+{
+    ChipStructure *structureNOT = new ChipStructure(new ChipBoundingBox{100, 100, posX, posY});
 
+    InputPin *inputPinNOT_A = new InputPin("A", 0);
+    OutputPin *outputPinNOT_Y = new OutputPin("Y", 0);
+
+    std::vector<InputPin *> inputPins;
+    std::vector<OutputPin *> outputPins;
+
+    inputPins.push_back(inputPinNOT_A);
+    outputPins.push_back(outputPinNOT_Y);
+
+    Chip *chiNOT = new Chip(structureNOT, inputPins, outputPins, "NOT");
+    chiNOT->setChipType(ChipType::NOT);
+    chips->push_back(*chiNOT);
     canvas->queue_draw();
 }
 
@@ -787,6 +884,7 @@ void ChipArea::draw_on_canvas(const Cairo::RefPtr<Cairo::Context> &cr,
     {
         (*chips)[i].draw(cr);
     }
+
     // global input pins
     for (int i = 0; i < globalInputPins->size(); i++)
     {
@@ -834,6 +932,15 @@ void ChipArea::draw_on_canvas(const Cairo::RefPtr<Cairo::Context> &cr,
 
         for (int j = 0; j < globalInputPins->at(i)->binds->size(); j++)
         {
+            cr->set_line_width(4);
+            if (globalInputPins->at(i)->binds->at(j)->isHovered)
+            {
+                cr->set_line_width(8);
+            }
+            else
+            {
+            }
+
             if (globalInputPins->at(i)->state == 1)
             {
                 cr->set_source_rgb(255 / 255.0, 255 / 255.0, 255 / 255.0);
@@ -842,8 +949,7 @@ void ChipArea::draw_on_canvas(const Cairo::RefPtr<Cairo::Context> &cr,
             {
                 cr->set_source_rgb(20 / 255.0, 20 / 255.0, 20 / 255.0);
             }
-            cr->set_line_width(4);
-            std::cout << "Drawing Wire" << std::endl;
+
             draw_wire_between(globalInputPins->at(i)->binds->at(j), cr);
         }
     }
@@ -873,18 +979,37 @@ void ChipArea::draw_on_canvas(const Cairo::RefPtr<Cairo::Context> &cr,
     }
 }
 
-ChipSelectorUI::ChipSelectorUI(ChipSelectorMenu *menu)
+ChipSelectorUI::ChipSelectorUI(ChipArea *area, ChipSelectorMenu *menu)
 {
     set_css_classes({"chip-selector"});
     set_orientation(Gtk::Orientation::HORIZONTAL);
     set_spacing(0);
 
+    // menu button
     menu_btn = Gtk::manage(new Gtk::Button());
     menu_btn->set_label("MENU");
     menu_btn->set_size_request(100, 50);
     menu_btn->set_css_classes({"chip-menu-btn", "chip-btn"});
     menu_btn->signal_clicked().connect(sigc::mem_fun(*menu, ChipSelectorMenu::showMenu));
     append(*menu_btn);
+
+    // and gate
+    Gtk::Button *and_btn;
+    and_btn = Gtk::manage(new Gtk::Button());
+    and_btn->set_label("AND");
+    and_btn->set_size_request(80, 50);
+    and_btn->set_css_classes({"chip-btn"});
+    and_btn->signal_clicked().connect(sigc::bind(sigc::mem_fun(*area, ChipArea::createAndChip), 0, 50, (area->height) - 300));
+    append(*and_btn);
+
+    // not gate
+    Gtk::Button *not_btn;
+    not_btn = Gtk::manage(new Gtk::Button());
+    not_btn->set_label("NOT");
+    not_btn->set_size_request(80, 50);
+    not_btn->set_css_classes({"chip-btn"});
+    not_btn->signal_clicked().connect(sigc::bind(sigc::mem_fun(*area, ChipArea::createNotChip), 0, 250, (area->height) - 300));
+    append(*not_btn);
 
     for (int i = 0; i < 5; i++)
     {
@@ -901,11 +1026,9 @@ void ChipSelectorUI::on_chip_selected(int index)
     selected_chip = index;
 }
 
-Bind::Bind(InputPin &input) : input(input) {
-                              };
+Bind::Bind(InputPin &input) : input(input){};
 
-BindToGlobalOutPut::BindToGlobalOutPut(GlobalOutputPin &output) : output(output) {
-                                                                  };
+BindToGlobalOutPut::BindToGlobalOutPut(GlobalOutputPin &output) : output(output){};
 
 void Bind::printConnection()
 {
@@ -947,7 +1070,7 @@ bool Pin::isInside(int mouseX, int mouseY)
     return false;
 }
 
-bool Pin::isMouseHovering(int mouseX, int mouseY)
+bool Pin::isHovering(int mouseX, int mouseY)
 {
     return (mouseX >= (x - radius - hoverRange)) && (mouseX <= (x + radius + hoverRange)) && (mouseY >= (y - radius - hoverRange)) && (mouseY <= (y + radius + hoverRange));
 }
@@ -1123,7 +1246,6 @@ bool Chip::isMouseHover(int x, int y)
     return x >= (structure->boundingBox->x - hoverRange) && x <= (structure->boundingBox->x + structure->boundingBox->width + hoverRange) && y >= (structure->boundingBox->y - hoverRange) && y <= (structure->boundingBox->y + structure->boundingBox->height + hoverRange);
 }
 
-
 MouseOffset Chip::getMouseOffset(int x, int y)
 {
     return MouseOffset{static_cast<double>(x) - structure->boundingBox->x, static_cast<double>(y) - structure->boundingBox->y};
@@ -1269,15 +1391,23 @@ void Chip::draw(const Cairo::RefPtr<Cairo::Context> &cr)
     {
         for (int j = 0; j < outputPins[i]->binds->size(); j++)
         {
+            cr->set_line_width(4);
+            if (outputPins[i]->binds->at(j)->isHovered)
+            {
+                cr->set_line_width(8);
+            }
+            else
+            {
+            }
             if (outputPins[i]->state == 1)
             {
                 cr->set_source_rgb(255 / 255.0, 255 / 255.0, 255 / 255.0);
             }
+
             else
             {
                 cr->set_source_rgb(20 / 255.0, 20 / 255.0, 20 / 255.0);
             }
-            cr->set_line_width(4);
 
             draw_wire_between(outputPins[i]->binds->at(j), cr);
 
@@ -1292,6 +1422,15 @@ void Chip::draw(const Cairo::RefPtr<Cairo::Context> &cr)
     {
         for (int j = 0; j < outputPins[i]->bindsToGlobalOutput->size(); j++)
         {
+            cr->set_line_width(4);
+            if (outputPins[i]->bindsToGlobalOutput->at(j)->isHovered)
+            {
+                cr->set_line_width(8);
+            }
+            else
+            {
+            }
+
             if (outputPins[i]->state == 1)
             {
                 cr->set_source_rgb(255 / 255.0, 255 / 255.0, 255 / 255.0);
@@ -1300,7 +1439,6 @@ void Chip::draw(const Cairo::RefPtr<Cairo::Context> &cr)
             {
                 cr->set_source_rgb(20 / 255.0, 20 / 255.0, 20 / 255.0);
             }
-            cr->set_line_width(4);
             // width - globalOutputPins->at(i)->radius - 10
 
             draw_wire_between(outputPins[i]->bindsToGlobalOutput->at(j), cr);
