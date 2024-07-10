@@ -31,6 +31,9 @@ class ChipArea : public Gtk::Frame
 {
 public:
     ChipArea(ScreenStack *stack);
+    int width;
+    int height;
+
     Gtk::Box *chipSelector;
     Gtk::Box *creationArea;
     Gtk::Grid *container;
@@ -69,8 +72,16 @@ public:
     void on_my_drag_end(double offset_x, double offset_y);
     void on_my_drag_update(double offset_x, double offset_y);
 
+    bool isHoveringLine(CordDouble MousePos, CordDouble A, CordDouble B, double tolerance);
+    bool isHoveringWire(CordDouble MousePos, Wire * wire, double tolerance);
 
-    void on_my_pressed(int n_press, double x, double y);
+    void updateHoveringChipsPins(CordDouble mousePos);
+    void updateHoveringWires(CordDouble mousePos);
+
+    bool shouldQueueDraw = false;
+
+
+    void onMyLeftClick(int n_press, double x, double y);
 
     void draw_on_canvas(const Cairo::RefPtr<Cairo::Context> &cr,
                         int width, int height);
@@ -80,7 +91,10 @@ public:
 
 
     void clear_canvas(const Cairo::RefPtr<Cairo::Context> &cr);
-    void create_chip(int index);
+    void createAndChip(int index, int posX, int posY);
+    void createNotChip(int index, int posX, int posY);
+
+
 
     void clear_actions();
 };
@@ -88,10 +102,11 @@ public:
 class ChipSelectorUI : public Gtk::Box
 {
 public:
-    ChipSelectorUI(ChipSelectorMenu *menu);
+    ChipSelectorUI(ChipArea *area, ChipSelectorMenu *menu);
     ChipSelectorMenu *menu;
     Gtk::Button *chips[5];
     Gtk::Button *menu_btn;
+    
     int test;
     int selected_chip = -1;
 
@@ -130,19 +145,21 @@ public:
     InputPin &input; // Store input as a reference
     OutputPin *output = nullptr;
     GlobalInputPin *gInput = nullptr;
-
     Wire *wire=nullptr;
+    bool selected = false;
+    bool isHovered = false;
 };
 
 class BindToGlobalOutPut
 {
 public:
-    BindToGlobalOutPut(GlobalOutputPin &output); // Accept a reference to InputPin
-    GlobalOutputPin &output;                     // Store input as a reference
+    BindToGlobalOutPut(GlobalOutputPin &output); // Accept a reference to OutputPin
+    GlobalOutputPin &output;                     // Store output as a reference
     OutputPin *localOutput = nullptr;
     GlobalInputPin *gInput = nullptr;
     Wire *wire=nullptr;
-
+    bool selected = false;
+    bool isHovered = false;
 };
 
 
@@ -157,7 +174,7 @@ public:
     int y;
     void setCord(int x, int y);
     bool isInside(int mouseX, int mouseY);
-    bool isMouseHovering(int mouseX, int mouseY);
+    bool isHovering(int mouseX, int mouseY);
     int hoverRange = 0;
     int radius;
     void setRadius(int radius);
@@ -217,6 +234,12 @@ enum PinType
 {
     outputPin,
     inputPin
+};
+
+enum activeStatus
+{
+    ON,
+    OFF
 };
 
 class Chip
