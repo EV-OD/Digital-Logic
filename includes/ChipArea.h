@@ -98,6 +98,8 @@ public:
 
 
     void save_circuit(std::string &name);
+    void load_chip(std::string &name);
+    void load_all_chips();
 
     void clear_actions();
 };

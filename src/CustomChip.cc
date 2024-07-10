@@ -1,6 +1,11 @@
 #include <fstream>
 #include "ChipArea.h"
 #include <cstring>
+#include <fstream>
+#include <vector>
+#include <sstream>
+#include <Parse.h>
+
 
 void ChipArea::addChip(Chip *chip){
     chip->index = chips->size();
@@ -138,4 +143,14 @@ void ChipArea::save_circuit(std::string &name){
 
     file << "# end" << std::endl;
 }
+
+
+void ChipArea::load_chip(std::string &name){
+    Parse parser;
+    parser.parseFile(name);
+}
+
+
+void ChipArea::load_all_chips(){}
+
 
