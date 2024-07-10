@@ -203,6 +203,38 @@ ChipArea::ChipArea(ScreenStack *stack)
     set_child(*overlay);
 }
 
+bool ChipArea::isHoveringLine(CordDouble mousePos, CordDouble A, CordDouble B, double tolerance)
+{
+    double dx = B.x - A.x;
+    double dy = B.y - A.y;
+    if (dx == 0)
+    {
+        // Handle vertical line case (special handling)
+        return fabs(mousePos.x - A.x) <= tolerance;
+    }
+
+    double distance = fabs(dy * mousePos.x - dx * mousePos.y + B.x * A.y - B.y * A.x) / sqrt(pow(dy, 2) + pow(dx, 2));
+
+    // check if withing the tolerance  and mouse within the segment , either A or B can be greater w.r.t X-axis
+    return distance <= tolerance && ((mousePos.x > A.x && mousePos.x < B.x) || (mousePos.x > B.x && mousePos.x < A.x));
+}
+
+bool ChipArea::isHoveringWire(CordDouble MousePos, Wire *wire, double tolerance)
+{
+    if (wire->breakPoints->size() > 1)
+    {
+
+        for (int point = 0; point < wire->breakPoints->size() - 1; point++)
+        {
+            if (isHoveringLine(mousePos, wire->breakPoints->at(point), wire->breakPoints->at(point + 1), tolerance))
+            {
+                return true;
+            };
+        }
+    }
+    return false;
+}
+
 void ChipArea::updateHoveringChipsPins(CordDouble mousePos)
 {
     for (int i = 0; i < chips->size(); i++)
@@ -239,13 +271,9 @@ void ChipArea::updateHoveringChipsPins(CordDouble mousePos)
     }
 }
 
-void ChipArea::on_my_motion(double x, double y)
+void ChipArea::updateHoveringWires(CordDouble mousePos)
 {
-    mousePos = CordDouble{x - margin, y - margin};
-    shouldQueueDraw = false;
-
-    updateHoveringChipsPins(mousePos);
-
+    int tolerance = 10;
     for (int i = 0; i < chips->size(); i++)
     {
         for (int j = 0; j < chips->at(i).outputPins.size(); j++)
@@ -258,26 +286,58 @@ void ChipArea::on_my_motion(double x, double y)
                 {
                     if (chips->at(i).outputPins[j]->binds->at(bind)->wire != nullptr)
                     {
-
-                        if (chips->at(i).outputPins[j]->binds->at(bind)->wire->breakPoints->size() > 1)
+                        if (chips->at(i).outputPins[j]->binds->at(bind)->isHovered != isHoveringWire(mousePos, chips->at(i).outputPins[j]->binds->at(bind)->wire, tolerance))
                         {
+                            chips->at(i).outputPins[j]->binds->at(bind)->isHovered = isHoveringWire(mousePos, chips->at(i).outputPins[j]->binds->at(bind)->wire, tolerance);
+                            shouldQueueDraw = true;
+                            break; // break after change to be made is found
+                        }
+                    }
+                }
+            }
 
-                            for (int point = 0; point < chips->at(i).outputPins[j]->binds->at(bind)->wire->breakPoints->size() - 1; point++)
-                            {
-                                std::cout << "here1" << std::endl;
-                                if (chips->at(i).outputPins[j]->binds->at(bind)->isHovered != isHoveringLine(mousePos, chips->at(i).outputPins[j]->binds->at(bind)->wire->breakPoints->at(point), chips->at(i).outputPins[j]->binds->at(bind)->wire->breakPoints->at(point + 1), 10))
-                                {
-                                    chips->at(i).outputPins[j]->binds->at(bind)->isHovered = isHoveringLine(mousePos, chips->at(i).outputPins[j]->binds->at(bind)->wire->breakPoints->at(point), chips->at(i).outputPins[j]->binds->at(bind)->wire->breakPoints->at(point + 1), 10);
-                                    std::cout << "hovering : " << chips->at(i).outputPins[j]->binds->at(bind)->isHovered << std::endl;
-                                    shouldQueueDraw = true;
-                                }
-                            }
-                        };
+            // wires from chip's outputs to globaloutputs
+            if (chips->at(i).outputPins[j]->bindsToGlobalOutput->size() > 0)
+            {
+                for (int bindToGlobalOutput = 0; bindToGlobalOutput < (chips->at(i).outputPins[j]->bindsToGlobalOutput->size()); bindToGlobalOutput++)
+                {
+
+                    if (chips->at(i).outputPins[j]->bindsToGlobalOutput->at(bindToGlobalOutput)->wire != nullptr)
+                    {
+                        if (chips->at(i).outputPins[j]->bindsToGlobalOutput->at(bindToGlobalOutput)->isHovered != isHoveringWire(mousePos, chips->at(i).outputPins[j]->bindsToGlobalOutput->at(bindToGlobalOutput)->wire, tolerance))
+                        {
+                            chips->at(i).outputPins[j]->bindsToGlobalOutput->at(bindToGlobalOutput)->isHovered = isHoveringWire(mousePos, chips->at(i).outputPins[j]->bindsToGlobalOutput->at(bindToGlobalOutput)->wire, tolerance);
+                            shouldQueueDraw = true;
+                            break; // break after change to be made is found
+                        }
+                    }
+                }
+            }
+
+            for (int pin = 0; pin < globalInputPins->size(); pin++)
+            {
+                for (int bind = 0; bind < globalInputPins->at(pin)->binds->size(); bind++)
+                {
+                    if (globalInputPins->at(pin)->binds->at(bind)->isHovered != isHoveringWire(mousePos, globalInputPins->at(pin)->binds->at(bind)->wire, tolerance))
+                    {
+                        globalInputPins->at(pin)->binds->at(bind)->isHovered = isHoveringWire(mousePos, globalInputPins->at(pin)->binds->at(bind)->wire, tolerance);
+                        std::cout << "hovered" << std::endl;
+                        shouldQueueDraw = true;
+                        break;
                     }
                 }
             }
         }
     }
+}
+
+void ChipArea::on_my_motion(double x, double y)
+{
+    mousePos = CordDouble{x - margin, y - margin};
+    shouldQueueDraw = false;
+
+    updateHoveringChipsPins(mousePos);
+    updateHoveringWires(mousePos);
 
     if (draggedWire != nullptr)
     {
@@ -705,22 +765,6 @@ void ChipArea::on_my_drag_end(double offset_x, double offset_y)
     canvas->queue_draw();
 }
 
-bool ChipArea::isHoveringLine(CordDouble mousePos, CordDouble A, CordDouble B, double tolerance)
-{
-    double dx = B.x - A.x;
-    double dy = B.y - A.y;
-    if (dx == 0)
-    {
-        // Handle vertical line case (special handling)
-        return fabs(mousePos.x - A.x) <= tolerance;
-    }
-
-    double distance = fabs(dy * mousePos.x - dx * mousePos.y + B.x * A.y - B.y * A.x) / sqrt(pow(dy, 2) + pow(dx, 2));
-
-    // check if withing the tolerance  and mouse within the segment , either A or B can be greater w.r.t X-axis
-    return distance <= tolerance && ((mousePos.x > A.x && mousePos.x < B.x) || (mousePos.x > B.x && mousePos.x < A.x));
-}
-
 void ChipArea::createAndChip(int index, int posX, int posY)
 {
     ChipStructure *structureAND = new ChipStructure(new ChipBoundingBox{100, 100, posX, posY});
@@ -888,6 +932,15 @@ void ChipArea::draw_on_canvas(const Cairo::RefPtr<Cairo::Context> &cr,
 
         for (int j = 0; j < globalInputPins->at(i)->binds->size(); j++)
         {
+            cr->set_line_width(4);
+            if (globalInputPins->at(i)->binds->at(j)->isHovered)
+            {
+                cr->set_line_width(8);
+            }
+            else
+            {
+            }
+
             if (globalInputPins->at(i)->state == 1)
             {
                 cr->set_source_rgb(255 / 255.0, 255 / 255.0, 255 / 255.0);
@@ -896,10 +949,8 @@ void ChipArea::draw_on_canvas(const Cairo::RefPtr<Cairo::Context> &cr,
             {
                 cr->set_source_rgb(20 / 255.0, 20 / 255.0, 20 / 255.0);
             }
-            cr->set_line_width(4);
-            std::cout << "Drawing Wire" << std::endl;
+
             draw_wire_between(globalInputPins->at(i)->binds->at(j), cr);
-            // draw_wire_between(globalInputPins->at(i)->binds->at(j), cr, state, hovering);
         }
     }
 
@@ -1341,23 +1392,21 @@ void Chip::draw(const Cairo::RefPtr<Cairo::Context> &cr)
         for (int j = 0; j < outputPins[i]->binds->size(); j++)
         {
             cr->set_line_width(4);
+            if (outputPins[i]->binds->at(j)->isHovered)
+            {
+                cr->set_line_width(8);
+            }
+            else
+            {
+            }
             if (outputPins[i]->state == 1)
             {
                 cr->set_source_rgb(255 / 255.0, 255 / 255.0, 255 / 255.0);
-                if (outputPins[i]->binds->at(j)->isHovered)
-                {
-                    cr->set_source_rgb(255 / 255.0, 0 / 255.0, 0 / 255.0);
-                }
             }
 
             else
             {
                 cr->set_source_rgb(20 / 255.0, 20 / 255.0, 20 / 255.0);
-
-                if (outputPins[i]->binds->at(j)->isHovered)
-                {
-                    cr->set_line_width(6);
-                }
             }
 
             draw_wire_between(outputPins[i]->binds->at(j), cr);
@@ -1374,6 +1423,14 @@ void Chip::draw(const Cairo::RefPtr<Cairo::Context> &cr)
         for (int j = 0; j < outputPins[i]->bindsToGlobalOutput->size(); j++)
         {
             cr->set_line_width(4);
+            if (outputPins[i]->bindsToGlobalOutput->at(j)->isHovered)
+            {
+                cr->set_line_width(8);
+            }
+            else
+            {
+            }
+
             if (outputPins[i]->state == 1)
             {
                 cr->set_source_rgb(255 / 255.0, 255 / 255.0, 255 / 255.0);
@@ -1381,11 +1438,6 @@ void Chip::draw(const Cairo::RefPtr<Cairo::Context> &cr)
             else
             {
                 cr->set_source_rgb(20 / 255.0, 20 / 255.0, 20 / 255.0);
-
-                // if (outputPins[i]->bindsToGlobalOutput->at(j)->isHovered)
-                // {
-                //    cr->set_line_width(6);
-                // }
             }
             // width - globalOutputPins->at(i)->radius - 10
 

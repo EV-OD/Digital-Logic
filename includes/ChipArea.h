@@ -73,6 +73,8 @@ public:
     void on_my_drag_update(double offset_x, double offset_y);
 
     bool isHoveringLine(CordDouble MousePos, CordDouble A, CordDouble B, double tolerance);
+    bool isHoveringWire(CordDouble MousePos, Wire * wire, double tolerance);
+
     void updateHoveringChipsPins(CordDouble mousePos);
     void updateHoveringWires(CordDouble mousePos);
 
