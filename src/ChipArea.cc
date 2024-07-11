@@ -10,12 +10,10 @@
 void draw_wire_between(Bind *bind, const Cairo::RefPtr<Cairo::Context> &cr)
 {
     // bind->wire
-    std::cout << "Wire: " << bind->wire << std::endl;
     if (bind->wire != nullptr)
     {
         if (bind->wire->breakPoints->size() != 0)
         {
-            std::cout << "Break Points: " << bind->wire->breakPoints->size() << std::endl;
             if (bind->gInput != nullptr)
             {
                 cr->move_to(bind->gInput->x, bind->gInput->y);
@@ -59,7 +57,6 @@ void draw_wire_between(Bind *bind, const Cairo::RefPtr<Cairo::Context> &cr)
 void draw_wire_between(BindToGlobalOutPut *bind, const Cairo::RefPtr<Cairo::Context> &cr)
 {
     // bind->wire
-    std::cout << "Wire: " << bind->wire << std::endl;
     if (bind->wire != nullptr)
     {
         if (bind->wire->breakPoints->size() != 0)
@@ -80,7 +77,6 @@ void draw_wire_between(BindToGlobalOutPut *bind, const Cairo::RefPtr<Cairo::Cont
             {
                 cr->line_to(bind->wire->breakPoints->at(1).x, bind->wire->breakPoints->at(1).y);
                 cr->stroke();
-                std::cout << "Break Points: " << bind->wire->breakPoints->size() << std::endl;
                 for (int i = 1; i < bind->wire->breakPoints->size() - 2; i++)
                 {
                     cr->move_to(bind->wire->breakPoints->at(i).x, bind->wire->breakPoints->at(i).y);
@@ -182,7 +178,6 @@ ChipArea::ChipArea(ScreenStack *stack)
     globalInputPins->push_back(globalInputPin);
     globalInputPins->push_back(globalInputPin2);
 
-    std::cout << "X Global Input Pins: " << globalInputPins->size() << std::endl;
 
     globalOutputPins->push_back(globalOutputPin);
 
@@ -200,6 +195,7 @@ ChipArea::ChipArea(ScreenStack *stack)
 
     wrapper->append(*container);
     overlay->set_child(*wrapper);
+    load_all_chips();
     set_child(*overlay);
 }
 
@@ -321,7 +317,6 @@ void ChipArea::updateHoveringWires(CordDouble mousePos)
                     if (globalInputPins->at(pin)->binds->at(bind)->isHovered != isHoveringWire(mousePos, globalInputPins->at(pin)->binds->at(bind)->wire, tolerance))
                     {
                         globalInputPins->at(pin)->binds->at(bind)->isHovered = isHoveringWire(mousePos, globalInputPins->at(pin)->binds->at(bind)->wire, tolerance);
-                        std::cout << "hovered" << std::endl;
                         shouldQueueDraw = true;
                         break;
                     }
@@ -620,7 +615,6 @@ void ChipArea::onMyLeftClick(int n_press, double x, double y)
 
             if (globalInputPins->at(i)->isInside(x - margin, y - margin))
             {
-                std::cout << "Global Input Pin Found" << std::endl;
                 draggedGlobalInputPin = globalInputPins->at(i);
                 draggedWire = new Wire();
                 draggedWire->breakPoints->push_back(CordDouble{double(draggedGlobalInputPin->x), double(draggedGlobalInputPin->y)});
@@ -1018,14 +1012,14 @@ ChipSelectorUI::ChipSelectorUI(ChipArea *area, ChipSelectorMenu *menu)
     not_btn->signal_clicked().connect(sigc::bind(sigc::mem_fun(*area, ChipArea::createNotChip), 0, 250, (area->height) - 300));
     append(*not_btn);
 
-    for (int i = 0; i < 5; i++)
-    {
-        chips[i] = Gtk::manage(new Gtk::Button());
-        chips[i]->set_label("Chip " + std::to_string(i));
-        chips[i]->set_size_request(50, 50);
-        chips[i]->set_css_classes({"chip-btn"});
-        append(*chips[i]);
-    }
+    // for (int i = 0; i < 5; i++)
+    // {
+    //     chips[i] = Gtk::manage(new Gtk::Button());
+    //     chips[i]->set_label("Chip " + std::to_string(i));
+    //     chips[i]->set_size_request(50, 50);
+    //     chips[i]->set_css_classes({"chip-btn"});
+    //     append(*chips[i]);
+    // }
 };
 
 void ChipSelectorUI::on_chip_selected(int index)
@@ -1186,6 +1180,14 @@ void Chip::addOutputPin(OutputPin *outputPin)
     outputPins.push_back(outputPin);
 }
 
+void Chip::setCustomChip(CustomChip *customChipT){
+    if(type == AND || type == NOT){
+        std::cout << "It is not Custom Chip" << std::endl;
+    }else{
+        customChip = customChipT;
+    }
+}
+
 void Chip::run()
 {
     // check chip type
@@ -1211,7 +1213,18 @@ void Chip::run()
     }
     else if (type == ChipType::CUSTOM)
     {
-        // custom logic
+        // map all state of input pin to custom chip global input pins
+        for (int i = 0; i < inputPins.size(); i++)
+        {
+            customChip->globalInputPins->at(i)->state = inputPins[i]->state;
+        }
+        customChip->run();
+
+        // map all state of custom chip global output pins to output pins
+        for (int i = 0; i < outputPins.size(); i++)
+        {
+            outputPins[i]->state = customChip->globalOutputPins->at(i)->state;
+        }
     }
 
     // array of chips
@@ -1542,7 +1555,9 @@ void ChipSelectorMenu::quit()
     scrn_stack->show_home_menu();
 }
 void ChipSelectorMenu::save_circuit(){
-    std::string name = "NAND";
+    std::string name = "OR";
     scrn_stack->chipArea->save_circuit(name);
-    hideMenu();
+    hide();
+    visible = false;
+    scrn_stack->chipArea->load_all_chips();
 }

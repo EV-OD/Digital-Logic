@@ -24,7 +24,7 @@ MyWindow::MyWindow()
   Gtk::StyleContext::add_provider_for_display(Gdk::Display::get_default(), css, GTK_STYLE_PROVIDER_PRIORITY_USER);
   // after some delay show the menu
   screenStack->stack->set_transition_type(Gtk::StackTransitionType::CROSSFADE);
-  Glib::signal_timeout().connect(sigc::mem_fun(*this, &MyWindow::on_timeout), 8000);
+  Glib::signal_timeout().connect(sigc::mem_fun(*this, &MyWindow::on_timeout), 1000);
 }
 
 bool MyWindow::on_timeout()

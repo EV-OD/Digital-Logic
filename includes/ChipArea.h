@@ -44,6 +44,7 @@ public:
     Gtk::Overlay *overlay;
 
     std::vector<Chip> *chips;
+    std::vector<std::string> chipFiles;
     void addChip(Chip *chip);
     Chip *draggedChip;
     GlobalInputPin *draggedGlobalInputPin = nullptr;
@@ -98,8 +99,9 @@ public:
 
 
     void save_circuit(std::string &name);
-    void load_chip(std::string &name);
+    Chip* load_chip(std::string &name);
     void load_all_chips();
+    void load_chip_to_circuit(std::string &name);
 
     void clear_actions();
 };
@@ -110,6 +112,7 @@ public:
     ChipSelectorUI(ChipArea *area, ChipSelectorMenu *menu);
     ChipSelectorMenu *menu;
     Gtk::Button *chips[5];
+    
     Gtk::Button *menu_btn;
     
     int test;
@@ -247,6 +250,14 @@ enum activeStatus
     OFF
 };
 
+class CustomChip{
+    public:
+    CustomChip(std::vector<GlobalInputPin*> *globalInputPins, std::vector<GlobalOutputPin*> *globalOutputPins);
+    std::vector<GlobalInputPin*> *globalInputPins;
+    std::vector<GlobalOutputPin*> *globalOutputPins;
+    void run();
+};
+
 class Chip
 {
 public:
@@ -277,14 +288,12 @@ public:
     {
         this->type = type;
     }
+    void setCustomChip(CustomChip *customChip);
+    protected:
+    CustomChip *customChip = nullptr;
 };
 
-class CustomChip{
-    public:
-    CustomChip(std::vector<GlobalInputPin*> *globalInputPins, std::vector<GlobalOutputPin*> *globalOutputPins);
-    std::vector<GlobalInputPin*> *globalInputPins;
-    std::vector<GlobalOutputPin*> *globalOutputPins;
-};
+
 
 class GlobalInputPin : public Pin
 {

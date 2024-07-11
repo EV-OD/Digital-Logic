@@ -10,22 +10,25 @@
 
 using namespace std;
 
+// Define a structure for Chip information
 struct ChipInfo {
     string type;
     int inputPin;
     int outputPin;
+    string name;
 };
 
+// Define the Parse class to parse the .chip file
 class Parse {
-private:
+public:
     int globalInputCount;
     int globalOutputCount;
-    vector<ChipInfo> chips;
-    vector<pair<int, int>> giToCiBinds;
-    vector<pair<int, int>> coToCiBinds;
-    vector<pair<int, int>> coToGoBinds;
-
-public:
+    vector<ChipInfo> chips; // Vector to store chip information
+    vector<pair<int, vector<int>>> giToCiBinds;
+    vector<pair<vector<int>, vector<int>>> coToCiBinds;
+    vector<pair<vector<int>, int>> coToGoBinds;
+    vector<pair<int, int>> giToGoBinds; // New vector for GI to GO bindings
+    // Function to parse the .chip file
     void parseFile(const string& filename);
 
 private:
@@ -38,8 +41,8 @@ private:
     // Function to parse bind information
     void parseBinds(ifstream& file);
 
-    // Helper function to extract index from string like GI[0]
-    int extractIndex(const string& str);
+    // Helper function to extract indices from string like GI[0]
+    vector<int> extractIndices(const string& str);
 };
 
 #endif // PARSE_H
