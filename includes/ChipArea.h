@@ -5,6 +5,13 @@
 #define CHIP_AREA
 
 #include <gtkmm.h>
+#include "dialog.h"
+#include <filesystem>
+#include <iostream>
+
+std::vector<std::string> getFilesWithExtension(const std::string& directory, const std::string& extension);
+
+
 class ScreenStack;
 
 class Chip;
@@ -42,6 +49,8 @@ public:
     CordDouble mousePos;
 
     Gtk::Overlay *overlay;
+    Dialog *save_popup = nullptr;
+    
 
     std::vector<Chip> *chips;
     std::vector<std::string> chipFiles;
@@ -101,9 +110,11 @@ public:
     void save_circuit(std::string &name);
     Chip* load_chip(std::string &name);
     void load_all_chips();
+    void load_each_chip(std::string &filename);
     void load_chip_to_circuit(std::string &name);
 
     void clear_actions();
+    void call_save_popup();
 };
 
 class ChipSelectorUI : public Gtk::Box
@@ -340,6 +351,7 @@ public:
     void showMenu();
     void quit();
     void save_circuit();
+    void show_save_popup();
 };
 
 

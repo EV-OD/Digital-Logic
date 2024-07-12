@@ -14,42 +14,6 @@ void ChipArea::addChip(Chip *chip)
     chips->push_back(*chip);
 }
 
-namespace fs = std::filesystem;
-
-// Function to get filenames with a specific extension in a directory
-std::vector<std::string> getFilesWithExtension(const std::string &directory, const std::string &extension)
-{
-    std::vector<std::string> filenames;
-
-    try
-    {
-        fs::path dirPath(directory);
-
-        // Check if the directory exists
-        if (!fs::exists(dirPath) || !fs::is_directory(dirPath))
-        {
-            std::cerr << "Error: Directory " << directory << " does not exist or is not a directory." << std::endl;
-            return filenames;
-        }
-
-        // Iterate through directory contents
-        for (const auto &entry : fs::directory_iterator(dirPath))
-        {
-            // Check if file path extension matches
-            if (entry.path().extension() == extension)
-            {
-                filenames.push_back(entry.path().filename().string());
-            }
-        }
-    }
-    catch (const fs::filesystem_error &ex)
-    {
-        std::cerr << "Filesystem error: " << ex.what() << std::endl;
-    }
-
-    return filenames;
-}
-
 void ChipArea::save_circuit(std::string &name)
 {
     std::fstream file;
@@ -210,7 +174,7 @@ void ChipArea::save_circuit(std::string &name)
     file << "# end" << std::endl;
 }
 
-Chip* ChipArea::load_chip(std::string &name)
+Chip *ChipArea::load_chip(std::string &name)
 {
     Parse parser;
     parser.parseFile(name);
@@ -218,7 +182,6 @@ Chip* ChipArea::load_chip(std::string &name)
     int global_output_pins_count = parser.globalOutputCount;
     std::vector<Chip *> *Ichips = new std::vector<Chip *>();
     // // // // create chips
-    cout << "Chips" << endl;
     for (const auto &chipInfo : parser.chips)
     {
         // Initialize a new ChipStructure with a bounding box
@@ -229,15 +192,15 @@ Chip* ChipArea::load_chip(std::string &name)
         // Determine the chip type
         ChipType typeE;
         std::string chipName = chipInfo.name;
-        //trim spaces
+        // trim spaces
         chipName.erase(std::remove(chipName.begin(), chipName.end(), ' '), chipName.end());
         if (chipInfo.type == "INBUILT")
         {
-            if(chipName == "AND")
+            if (chipName == "AND")
             {
                 typeE = AND;
             }
-            else if(chipName == "NOT")
+            else if (chipName == "NOT")
             {
                 typeE = NOT;
             }
@@ -247,12 +210,8 @@ Chip* ChipArea::load_chip(std::string &name)
             typeE = CUSTOM;
             std::string chipFileName = chipName + ".chip";
             std::string test = "NAND.chip";
-            cout << "Length:" << chipFileName.length() << endl;
-            cout << "Dummy Length" << test.length() << endl;
-            cout << "|" << chipName << "|" << endl;
-            cout << "|" << test << "|" << endl;
 
-            Chip* newChip = load_chip(chipFileName);
+            Chip *newChip = load_chip(chipFileName);
             Ichips->push_back(newChip);
             continue;
         }
@@ -269,7 +228,6 @@ Chip* ChipArea::load_chip(std::string &name)
         {
             OutputPin *outputPin = new OutputPin("output", j);
             outputPins.push_back(outputPin);
-            cout << "added output pin" << endl;
         }
 
         // Create the chip with the structure, input pins, output pins, and name
@@ -410,10 +368,8 @@ Chip* ChipArea::load_chip(std::string &name)
         int chipIndex = bindPair.first[0];
         const auto &secondIndices = bindPair.second;
 
-
         int chipPinIndex = bindPair.first[1];
         int GOIndex = secondIndices;
-
 
         try
         {
@@ -444,16 +400,21 @@ void ChipArea::load_chip_to_circuit(std::string &name)
     canvas->queue_draw();
 }
 
+void ChipArea::load_each_chip(std::string &filename)
+{
+    Gtk::Button *btn = Gtk::manage(new Gtk::Button());
+    btn->set_label(filename.substr(0, filename.size() - 5));
+    chipSelector->append(*btn);
+
+    btn->signal_clicked().connect(sigc::bind(sigc::mem_fun(*this, &ChipArea::load_chip_to_circuit), filename));
+}
+
 void ChipArea::load_all_chips()
 {
     chipFiles = getFilesWithExtension(".", ".chip");
     for (int i = 0; i < chipFiles.size(); i++)
     {
-        Gtk::Button *btn = Gtk::manage(new Gtk::Button());
-        btn->set_label(chipFiles[i].substr(0, chipFiles[i].size() - 5));
-        chipSelector->append(*btn);
-        std::string &filename = chipFiles[i];
-        btn->signal_clicked().connect(sigc::bind(sigc::mem_fun(*this, &ChipArea::load_chip_to_circuit), std::ref(filename)));
+        load_each_chip(chipFiles[i]);
     }
 }
 
@@ -482,7 +443,6 @@ void CustomChip::run()
     }
     for (int i = 0; i < chips.size(); i++)
     {
-        cout << chips[i]->type << chips[i]->name << endl;
         chips[i]->run();
     }
 }

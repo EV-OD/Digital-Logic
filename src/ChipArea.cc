@@ -3,9 +3,47 @@
 #include <X11/Xlib.h>
 #include <windows.h>
 #include <iostream>
+#include "dialog.h"
+#include <filesystem>
+
 
 #define margin 30
 #define globalPinGap 40
+
+namespace fs = std::filesystem;
+// Function to get filenames with a specific extension in a directory
+std::vector<std::string> getFilesWithExtension(const std::string &directory, const std::string &extension)
+{
+    std::vector<std::string> filenames;
+
+    try
+    {
+        fs::path dirPath(directory);
+
+        // Check if the directory exists
+        if (!fs::exists(dirPath) || !fs::is_directory(dirPath))
+        {
+            std::cerr << "Error: Directory " << directory << " does not exist or is not a directory." << std::endl;
+            return filenames;
+        }
+
+        // Iterate through directory contents
+        for (const auto &entry : fs::directory_iterator(dirPath))
+        {
+            // Check if file path extension matches
+            if (entry.path().extension() == extension)
+            {
+                filenames.push_back(entry.path().filename().string());
+            }
+        }
+    }
+    catch (const fs::filesystem_error &ex)
+    {
+        std::cerr << "Filesystem error: " << ex.what() << std::endl;
+    }
+
+    return filenames;
+}
 
 void draw_wire_between(Bind *bind, const Cairo::RefPtr<Cairo::Context> &cr)
 {
@@ -101,9 +139,15 @@ void draw_wire_between(BindToGlobalOutPut *bind, const Cairo::RefPtr<Cairo::Cont
     }
 }
 
+void ChipArea::call_save_popup(){
+    ActionMenu->save_circuit();
+}
+
 ChipArea::ChipArea(ScreenStack *stack)
 {
     this->stack = stack;
+    this->save_popup = new Dialog();
+    this->save_popup->saveBtn->signal_clicked().connect(sigc::mem_fun(*this, &ChipArea::call_save_popup));
     this->width = GetSystemMetrics(SM_CXSCREEN);
     this->height = GetSystemMetrics(SM_CYSCREEN);
 
@@ -192,6 +236,7 @@ ChipArea::ChipArea(ScreenStack *stack)
     container->attach(*chipSelector, 0, 3, 1, 1);
 
     overlay->add_overlay(*ActionMenu);
+    overlay->add_overlay(*save_popup);
 
     wrapper->append(*container);
     overlay->set_child(*wrapper);
@@ -1522,7 +1567,7 @@ ChipSelectorMenu::ChipSelectorMenu(int width, int height, ScreenStack *scrn_stac
     save->set_css_classes({"action-menu-btn"});
     save->set_size_request(300, 50);
     save->set_label("SAVE");
-    save->signal_clicked().connect(sigc::mem_fun(*this, ChipSelectorMenu::save_circuit));
+    save->signal_clicked().connect(sigc::mem_fun(*this, ChipSelectorMenu::show_save_popup));
     ActionBox->append(*quit);
     ActionBox->append(*library);
     ActionBox->append(*save);
@@ -1543,6 +1588,11 @@ void ChipSelectorMenu::hideMenu(int, int, int)
     visible = false;
 }
 
+void ChipSelectorMenu::show_save_popup()
+{
+    scrn_stack->chipArea->save_popup->showUI();
+}
+
 void ChipSelectorMenu::showMenu()
 {
     show();
@@ -1555,9 +1605,27 @@ void ChipSelectorMenu::quit()
     scrn_stack->show_home_menu();
 }
 void ChipSelectorMenu::save_circuit(){
-    std::string name = "OR";
-    scrn_stack->chipArea->save_circuit(name);
-    hide();
-    visible = false;
-    scrn_stack->chipArea->load_all_chips();
+    Glib::OptionGroup::vecstrings chipFiles = getFilesWithExtension(".", ".chip");
+    std::string chipName = scrn_stack->chipArea->save_popup->getEntryText();
+    std::string chipFilename = chipName + ".chip";
+    std::cout << chipFilename << std::endl;
+    // check if chipFiles contains chipName
+    bool isPresent = false;
+    for(int i = 0; i < chipFiles.size(); i++){
+        if(chipFiles[i] == chipFilename){
+            isPresent = true;
+            break;
+        }
+    }
+    if(isPresent){
+        scrn_stack->chipArea->save_popup->showError();
+    }else{
+        scrn_stack->chipArea->save_circuit(chipName);
+        scrn_stack->chipArea->save_popup->showUI();
+        hide();
+        visible = false;
+        // scrn_stack->chipArea->load_all_chips();
+        scrn_stack->chipArea->load_each_chip(chipFilename);
+    }
+    scrn_stack->chipArea->save_popup->hideUI();
 }

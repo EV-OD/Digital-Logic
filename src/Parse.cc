@@ -25,56 +25,53 @@ void Parse::parseFile(const string& filename) {
     file.close();
 
     // Output parsed data (for testing)
-    cout << "Global Inputs: " << globalInputCount << endl;
-    cout << "Global Outputs: " << globalOutputCount << endl;
+    // cout << "Global Inputs: " << globalInputCount << endl;
+    // cout << "Global Outputs: " << globalOutputCount << endl;
 
-    cout << "\nChips:" << endl;
-    for (const auto& chip : chips) {
-        cout << "Name" << chip.name << endl;
-        cout << "Type: " << chip.type << endl;
-        cout << "Input Pin: " << chip.inputPin << endl;
-        cout << "Output Pin: " << chip.outputPin << endl;
-        cout << "---" << endl;
-    }
+    // cout << "\nChips:" << endl;
+    // for (const auto& chip : chips) {
+    //     cout << "Name" << chip.name << endl;
+    //     cout << "Type: " << chip.type << endl;
+    //     cout << "Input Pin: " << chip.inputPin << endl;
+    //     cout << "Output Pin: " << chip.outputPin << endl;
+    //     cout << "---" << endl;
+    // }
 
-    cout << "\nGI to CI Binds:" << endl;
-    for (const auto& bind : giToCiBinds) {
-        cout << "GI[" << bind.first << "] -> CI[";
-        for (size_t i = 0; i < bind.second.size(); ++i) {
-            if (i > 0) cout << "][";
-            cout << bind.second[i];
-        }
-        cout << "]" << endl;
-    }
+    // cout << "\nGI to CI Binds:" << endl;
+    // for (const auto& bind : giToCiBinds) {
+    //     cout << "GI[" << bind.first << "] -> CI[";
+    //     for (size_t i = 0; i < bind.second.size(); ++i) {
+    //         if (i > 0) cout << "][";
+    //         cout << bind.second[i];
+    //     }
+    //     cout << "]" << endl;
+    // }
 
-    cout << "\nCO to CI Binds:" << endl;
-    for (const auto& bind : coToCiBinds) {
-        cout << "CO[" << bind.first[0] << "][" << bind.first[1] <<"] -> CI[";
-        for (size_t i = 0; i < bind.second.size(); ++i) {
-            if (i > 0) cout << "][";
-            cout << bind.second[i];
-        }
-        cout << "]" << endl;
-    }
+    // cout << "\nCO to CI Binds:" << endl;
+    // for (const auto& bind : coToCiBinds) {
+    //     cout << "CO[" << bind.first[0] << "][" << bind.first[1] <<"] -> CI[";
+    //     for (size_t i = 0; i < bind.second.size(); ++i) {
+    //         if (i > 0) cout << "][";
+    //         cout << bind.second[i];
+    //     }
+    //     cout << "]" << endl;
+    // }
 
-    cout << "\nCO to GO Binds:" << endl;
-    for (const auto& bind : coToGoBinds) {
-        cout << "CO[" << bind.first[0] << "][" << bind.first[1] << "] -> GO[" << bind.second << "]" << endl;
-    }
+    // cout << "\nCO to GO Binds:" << endl;
+    // for (const auto& bind : coToGoBinds) {
+    //     cout << "CO[" << bind.first[0] << "][" << bind.first[1] << "] -> GO[" << bind.second << "]" << endl;
+    // }
 
-    cout << "\nGI to GO Binds:" << endl;
-    for (const auto& bind : giToGoBinds) {
-        cout << "GI[" << bind.first << "] -> GO[" << bind.second << "]" << endl;
-    }
+    // cout << "\nGI to GO Binds:" << endl;
+    // for (const auto& bind : giToGoBinds) {
+    //     cout << "GI[" << bind.first << "] -> GO[" << bind.second << "]" << endl;
+    // }
 }
 
 int Parse::extractNumber(const string& line, const string& delimiter, int offset) {
     size_t pos = line.find(delimiter);
     if (pos != string::npos) {
         try {
-            std::cout << "Line: " << line << std::endl;
-            std::cout << "Pos: " << pos << std::endl;
-            std::cout << "Substring: " << line.substr(pos + delimiter.length() + offset) << std::endl;
             return std::stoi(line.substr(pos + delimiter.length() + offset));
         } catch (const std::invalid_argument& e) {
             std::cerr << "Invalid argument error: extractNumber" << e.what() << std::endl;
