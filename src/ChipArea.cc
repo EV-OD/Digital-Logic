@@ -208,16 +208,24 @@ ChipArea::ChipArea(ScreenStack *stack)
     draggedChip = nullptr;
 
     chips = new std::vector<Chip>();
+    int radius = 40;
+    int bottomPos = height - 190 - radius - globalPinGap;
+    int rightPos = width - margin - radius - globalPinGap;
+    globalInputPinPlusAction = new PinPlusAction(radius, 40);
+    globalInputPinMinusAction = new PinMinusAction(radius, bottomPos);
+
+    globalOutputPinPlusAction = new PinPlusAction(rightPos, radius);
+    globalOutputPinMinusAction = new PinMinusAction(rightPos, bottomPos);
 
     globalInputPins = new std::vector<GlobalInputPin *>();
     globalOutputPins = new std::vector<GlobalOutputPin *>();
 
-    GlobalInputPin *globalInputPin = new GlobalInputPin(0, 30);
+    GlobalInputPin *globalInputPin = new GlobalInputPin(0, 100);
     globalInputPin->state = 1;
-    GlobalInputPin *globalInputPin2 = new GlobalInputPin(1, 100);
+    GlobalInputPin *globalInputPin2 = new GlobalInputPin(1, 150);
     globalInputPin2->state = 0;
 
-    GlobalOutputPin *globalOutputPin = new GlobalOutputPin(0, 30);
+    GlobalOutputPin *globalOutputPin = new GlobalOutputPin(0, 100);
 
     globalInputPins->push_back(globalInputPin);
     globalInputPins->push_back(globalInputPin2);
@@ -733,6 +741,30 @@ void ChipArea::onMyLeftClick(int n_press, double x, double y)
             run();
         }
     }
+
+    std::cout << "MouseX: " << x - margin << " MouseY: " << y - margin << std::endl;
+    std::cout << "globalOutputPinPlusActionX:" << globalOutputPinPlusAction->x << " globalOutputPinPlusActionY:" << globalOutputPinPlusAction->y << std::endl;
+    if(globalInputPinPlusAction->isMouseInside(x - margin, y - margin)){
+        int size = globalInputPins->size();
+        int y = (size == 0 ? 100 : 100 + (size * 50));
+        GlobalInputPin *globalInputPin = new GlobalInputPin(0, y);
+        globalInputPins->push_back(globalInputPin);
+    }else if(globalInputPinMinusAction->isMouseInside(x - margin, y - margin)){
+        if(globalInputPins->size() > 0){
+            globalInputPins->pop_back();
+        }
+    }
+    if(globalOutputPinPlusAction->isMouseInside(x - margin, y - margin)){
+        int size = globalOutputPins->size();
+        int y = (size == 0 ? 100 : 100 + (size * 50));
+        GlobalOutputPin *globalOutputPin = new GlobalOutputPin(size, y);
+        globalOutputPins->push_back(globalOutputPin);
+    }
+    else if(globalOutputPinMinusAction->isMouseInside(x - margin, y - margin)){
+        if(globalOutputPins->size() > 0){
+            globalOutputPins->pop_back();
+        }
+    }
     run();
 }
 
@@ -882,7 +914,12 @@ void ChipArea::draw_on_canvas(const Cairo::RefPtr<Cairo::Context> &cr,
                               int width, int height)
 {
     clear_canvas(cr);
+    // draw globalInputPinPlusAction
+    globalInputPinPlusAction->draw(cr);
+    globalInputPinMinusAction->draw(cr);
 
+    globalOutputPinPlusAction->draw(cr);
+    globalOutputPinMinusAction->draw(cr);
     // draw dragged wire
     if (draggedWire != nullptr)
     {
@@ -907,9 +944,11 @@ void ChipArea::draw_on_canvas(const Cairo::RefPtr<Cairo::Context> &cr,
     // global output pins
     for (int i = 0; i < globalOutputPins->size(); i++)
     {
+
         globalOutputPins->at(i)->radius = 20;
         cr->set_source_rgb(200 / 255.0, 39 / 255.0, 92 / 255.0);
-
+        std::cout << "globalOutputPins->at(i)->radius:" << globalOutputPins->at(i)->radius << std::endl;
+        std::cout << "X:" << width - globalOutputPins->at(i)->radius - globalPinGap << " Y:" << globalOutputPins->at(i)->y << std::endl;
         cr->arc(width - globalOutputPins->at(i)->radius - globalPinGap, globalOutputPins->at(i)->y, globalOutputPins->at(i)->radius, 0, 2 * M_PI);
         cr->fill();
 

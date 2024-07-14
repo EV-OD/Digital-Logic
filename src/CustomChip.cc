@@ -446,3 +446,28 @@ void CustomChip::run()
         chips[i]->run();
     }
 }
+
+void PinPlusAction::draw(const Cairo::RefPtr<Cairo::Context> &cr)
+{
+    PinAction::draw(cr);
+    // plus sign
+    // white 
+    cr->set_source_rgb(1, 1, 1);
+    cr->move_to(x - 10, y);
+    cr->line_to(x + 10, y);
+    cr->move_to(x, y - 10);
+    cr->line_to(x, y + 10);
+    cr->stroke();
+}
+
+void PinMinusAction::draw(const Cairo::RefPtr<Cairo::Context> &cr)
+{
+    PinAction::draw(cr);
+    // minus sign
+    // white
+    cr->set_source_rgb(1, 1, 1);
+    cr->move_to(x - 10, y);
+    cr->line_to(x + 10, y);
+    cr->stroke();
+}
+
