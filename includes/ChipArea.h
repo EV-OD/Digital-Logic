@@ -20,6 +20,8 @@ class GlobalInputPin;
 class GlobalOutputPin;
 class ChipSelectorMenu;
 class Wire;
+class PinPlusAction;
+class PinMinusAction;
 
 struct Cord
 {
@@ -59,6 +61,11 @@ public:
     GlobalOutputPin *draggedGlobalOutputPin = nullptr;
     InputPin *draggedInputPin = nullptr;
 
+    PinPlusAction *globalInputPinPlusAction = nullptr;
+    PinMinusAction *globalInputPinMinusAction = nullptr;
+
+    PinPlusAction *globalOutputPinPlusAction = nullptr;
+    PinMinusAction *globalOutputPinMinusAction = nullptr;
     Wire *draggedWire = nullptr;
 
     void run();
@@ -352,5 +359,40 @@ public:
     void save_circuit();
     void show_save_popup();
 };
+
+class PinAction{
+    public:
+    PinAction(double x, double y): x(x), y(y){}
+    double x;
+    double y;
+    bool isHovered = false;
+    int radius = 30;
+    void draw(const Cairo::RefPtr<Cairo::Context> &cr){
+        cr->set_source_rgb(0.0, 0.0, 0.0);
+        cr->arc(x, y, radius, 0, 2 * M_PI);
+        cr->fill();
+    }
+
+    bool isMouseInside(double mouseX, double mouseY){
+        if(sqrt(pow(mouseX - x, 2) + pow(mouseY - y, 2)) <= radius){
+            isHovered = true;
+        }else{
+            isHovered = false;
+        }
+        return isHovered;
+    }
+};
+class PinPlusAction : public PinAction{
+    public:
+    PinPlusAction(double x, double y): PinAction(x, y){}
+    void draw(const Cairo::RefPtr<Cairo::Context> &cr);
+};
+
+class PinMinusAction : public PinAction{
+    public:
+    PinMinusAction(double x, double y): PinAction(x, y){}
+    void draw(const Cairo::RefPtr<Cairo::Context> &cr);
+};
+
 
 #endif
