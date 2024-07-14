@@ -6,7 +6,6 @@
 #include "dialog.h"
 #include <filesystem>
 
-
 #define margin 30
 #define globalPinGap 40
 
@@ -139,7 +138,8 @@ void draw_wire_between(BindToGlobalOutPut *bind, const Cairo::RefPtr<Cairo::Cont
     }
 }
 
-void ChipArea::call_save_popup(){
+void ChipArea::call_save_popup()
+{
     ActionMenu->save_circuit();
 }
 
@@ -207,7 +207,7 @@ ChipArea::ChipArea(ScreenStack *stack)
 
     draggedChip = nullptr;
 
-    chips = new std::vector<Chip>();
+    chips = new std::vector<Chip *>();
 
     globalInputPins = new std::vector<GlobalInputPin *>();
     globalOutputPins = new std::vector<GlobalOutputPin *>();
@@ -221,7 +221,6 @@ ChipArea::ChipArea(ScreenStack *stack)
 
     globalInputPins->push_back(globalInputPin);
     globalInputPins->push_back(globalInputPin2);
-
 
     globalOutputPins->push_back(globalOutputPin);
 
@@ -281,31 +280,31 @@ void ChipArea::updateHoveringChipsPins(CordDouble mousePos)
     for (int i = 0; i < chips->size(); i++)
     {
         // for chips
-        if (chips->at(i).isHovered != chips->at(i).isMouseHover(mousePos.x, mousePos.y))
+        if (chips->at(i)->isHovered != chips->at(i)->isMouseHover(mousePos.x, mousePos.y))
         {
-            chips->at(i).isHovered = chips->at(i).isMouseHover(mousePos.x, mousePos.y);
-            shouldQueueDraw = true;
+            chips->at(i)->isHovered = chips->at(i)->isMouseHover(mousePos.x, mousePos.y);
+            // shouldQueueDraw = true; //commented
         }
         else
         {
         }
 
         // for input pins
-        for (int j = 0; j < chips->at(i).inputPins.size(); j++)
+        for (int j = 0; j < chips->at(i)->inputPins.size(); j++)
         {
-            if (chips->at(i).inputPins[j]->isHovered != chips->at(i).inputPins[j]->isHovering(mousePos.x, mousePos.y))
+            if (chips->at(i)->inputPins[j]->isHovered != chips->at(i)->inputPins[j]->isHovering(mousePos.x, mousePos.y))
             {
-                chips->at(i).inputPins[j]->isHovered = chips->at(i).inputPins[j]->isHovering(mousePos.x, mousePos.y);
+                chips->at(i)->inputPins[j]->isHovered = chips->at(i)->inputPins[j]->isHovering(mousePos.x, mousePos.y);
                 shouldQueueDraw = true;
             };
         }
 
         // for output pins
-        for (int j = 0; j < chips->at(i).outputPins.size(); j++)
+        for (int j = 0; j < chips->at(i)->outputPins.size(); j++)
         {
-            if (chips->at(i).outputPins[j]->isHovered != chips->at(i).outputPins[j]->isHovering(mousePos.x, mousePos.y))
+            if (chips->at(i)->outputPins[j]->isHovered != chips->at(i)->outputPins[j]->isHovering(mousePos.x, mousePos.y))
             {
-                chips->at(i).outputPins[j]->isHovered = chips->at(i).outputPins[j]->isHovering(mousePos.x, mousePos.y);
+                chips->at(i)->outputPins[j]->isHovered = chips->at(i)->outputPins[j]->isHovering(mousePos.x, mousePos.y);
                 shouldQueueDraw = true;
             }
         }
@@ -317,19 +316,19 @@ void ChipArea::updateHoveringWires(CordDouble mousePos)
     int tolerance = 10;
     for (int i = 0; i < chips->size(); i++)
     {
-        for (int j = 0; j < chips->at(i).outputPins.size(); j++)
+        for (int j = 0; j < chips->at(i)->outputPins.size(); j++)
         {
 
-            // hover for wires
-            if (chips->at(i).outputPins[j]->binds->size() != 0)
+            // hover for general wires
+            if (chips->at(i)->outputPins[j]->binds->size() != 0)
             {
-                for (int bind = 0; bind < (chips->at(i).outputPins[j]->binds->size()); bind++)
+                for (int bind = 0; bind < (chips->at(i)->outputPins[j]->binds->size()); bind++)
                 {
-                    if (chips->at(i).outputPins[j]->binds->at(bind)->wire != nullptr)
+                    if (chips->at(i)->outputPins[j]->binds->at(bind)->wire != nullptr)
                     {
-                        if (chips->at(i).outputPins[j]->binds->at(bind)->isHovered != isHoveringWire(mousePos, chips->at(i).outputPins[j]->binds->at(bind)->wire, tolerance))
+                        if (chips->at(i)->outputPins[j]->binds->at(bind)->isHovered != isHoveringWire(mousePos, chips->at(i)->outputPins[j]->binds->at(bind)->wire, tolerance))
                         {
-                            chips->at(i).outputPins[j]->binds->at(bind)->isHovered = isHoveringWire(mousePos, chips->at(i).outputPins[j]->binds->at(bind)->wire, tolerance);
+                            chips->at(i)->outputPins[j]->binds->at(bind)->isHovered = isHoveringWire(mousePos, chips->at(i)->outputPins[j]->binds->at(bind)->wire, tolerance);
                             shouldQueueDraw = true;
                             break; // break after change to be made is found
                         }
@@ -338,16 +337,16 @@ void ChipArea::updateHoveringWires(CordDouble mousePos)
             }
 
             // wires from chip's outputs to globaloutputs
-            if (chips->at(i).outputPins[j]->bindsToGlobalOutput->size() > 0)
+            if (chips->at(i)->outputPins[j]->bindsToGlobalOutput->size() > 0)
             {
-                for (int bindToGlobalOutput = 0; bindToGlobalOutput < (chips->at(i).outputPins[j]->bindsToGlobalOutput->size()); bindToGlobalOutput++)
+                for (int bindToGlobalOutput = 0; bindToGlobalOutput < (chips->at(i)->outputPins[j]->bindsToGlobalOutput->size()); bindToGlobalOutput++)
                 {
 
-                    if (chips->at(i).outputPins[j]->bindsToGlobalOutput->at(bindToGlobalOutput)->wire != nullptr)
+                    if (chips->at(i)->outputPins[j]->bindsToGlobalOutput->at(bindToGlobalOutput)->wire != nullptr)
                     {
-                        if (chips->at(i).outputPins[j]->bindsToGlobalOutput->at(bindToGlobalOutput)->isHovered != isHoveringWire(mousePos, chips->at(i).outputPins[j]->bindsToGlobalOutput->at(bindToGlobalOutput)->wire, tolerance))
+                        if (chips->at(i)->outputPins[j]->bindsToGlobalOutput->at(bindToGlobalOutput)->isHovered != isHoveringWire(mousePos, chips->at(i)->outputPins[j]->bindsToGlobalOutput->at(bindToGlobalOutput)->wire, tolerance))
                         {
-                            chips->at(i).outputPins[j]->bindsToGlobalOutput->at(bindToGlobalOutput)->isHovered = isHoveringWire(mousePos, chips->at(i).outputPins[j]->bindsToGlobalOutput->at(bindToGlobalOutput)->wire, tolerance);
+                            chips->at(i)->outputPins[j]->bindsToGlobalOutput->at(bindToGlobalOutput)->isHovered = isHoveringWire(mousePos, chips->at(i)->outputPins[j]->bindsToGlobalOutput->at(bindToGlobalOutput)->wire, tolerance);
                             shouldQueueDraw = true;
                             break; // break after change to be made is found
                         }
@@ -355,6 +354,7 @@ void ChipArea::updateHoveringWires(CordDouble mousePos)
                 }
             }
 
+            // wires from global input pins
             for (int pin = 0; pin < globalInputPins->size(); pin++)
             {
                 for (int bind = 0; bind < globalInputPins->at(pin)->binds->size(); bind++)
@@ -364,6 +364,72 @@ void ChipArea::updateHoveringWires(CordDouble mousePos)
                         globalInputPins->at(pin)->binds->at(bind)->isHovered = isHoveringWire(mousePos, globalInputPins->at(pin)->binds->at(bind)->wire, tolerance);
                         shouldQueueDraw = true;
                         break;
+                    }
+                }
+            }
+        }
+    }
+}
+
+void ChipArea::updateClickedWires(CordDouble mousePos)
+{
+    for (int i = 0; i < chips->size(); i++)
+    {
+        for (int j = 0; j < chips->at(i)->outputPins.size(); j++)
+        {
+
+            // chips' outputs' wires
+            if (chips->at(i)->outputPins[j]->binds->size() != 0)
+            {
+                for (int bind = 0; bind < (chips->at(i)->outputPins[j]->binds->size()); bind++)
+                {
+                    if (chips->at(i)->outputPins[j]->binds->at(bind)->wire != nullptr)
+                    {
+                        if (chips->at(i)->outputPins[j]->binds->at(bind)->isHovered)
+                        {
+                            chips->at(i)->outputPins[j]->binds->at(bind)->isClicked = true;
+                        }
+                        else
+                        {
+                            chips->at(i)->outputPins[j]->binds->at(bind)->isClicked = false;
+                        }
+                    }
+                }
+            }
+
+            // wires from chip's outputs to globaloutputs
+            if (chips->at(i)->outputPins[j]->bindsToGlobalOutput->size() > 0)
+            {
+                for (int bindToGlobalOutput = 0; bindToGlobalOutput < (chips->at(i)->outputPins[j]->bindsToGlobalOutput->size()); bindToGlobalOutput++)
+                {
+
+                    if (chips->at(i)->outputPins[j]->bindsToGlobalOutput->at(bindToGlobalOutput)->wire != nullptr)
+                    {
+                        if (chips->at(i)->outputPins[j]->bindsToGlobalOutput->at(bindToGlobalOutput)->isHovered)
+                        {
+                            chips->at(i)->outputPins[j]->bindsToGlobalOutput->at(bindToGlobalOutput)->isClicked = true;
+                        }
+                        else
+                        {
+                            chips->at(i)->outputPins[j]->bindsToGlobalOutput->at(bindToGlobalOutput)->isClicked = false;
+                        }
+                    }
+                }
+            }
+
+            // wires from globalInputs
+            for (int pin = 0; pin < globalInputPins->size(); pin++)
+            {
+                for (int bind = 0; bind < globalInputPins->at(pin)->binds->size(); bind++)
+                {
+                    if (globalInputPins->at(pin)->binds->at(bind)->isHovered)
+                    {
+
+                        globalInputPins->at(pin)->binds->at(bind)->isClicked = true;
+                    }
+                    else
+                    {
+                        globalInputPins->at(pin)->binds->at(bind)->isClicked = false;
                     }
                 }
             }
@@ -410,11 +476,18 @@ bool ChipArea::on_my_key_pressed(guint keyval, guint /*keycode*/, Gdk::ModifierT
         clear_actions();
         return true; // Event has been handled
     }
+
+    if (keyval == GDK_KEY_KP_Delete || keyval == GDK_KEY_Delete || keyval == GDK_KEY_BackSpace)
+    {
+        onMyDeleteKeyPressed();
+    }
+
     return false; // Event has not been handled
 }
 
 void ChipArea::onMyLeftClick(int n_press, double x, double y)
 {
+    // if a wire is dragged
     if (draggedGlobalInputPin != nullptr)
     {
         if (draggedWire != nullptr)
@@ -452,15 +525,15 @@ void ChipArea::onMyLeftClick(int n_press, double x, double y)
             // check input pin
             for (int i = 0; i < chips->size(); i++)
             {
-                for (int j = 0; j < chips->at(i).inputPins.size(); j++)
+                for (int j = 0; j < chips->at(i)->inputPins.size(); j++)
                 {
-                    if (chips->at(i).inputPins[j]->isInside(x - margin, y - margin))
+                    if (chips->at(i)->inputPins[j]->isInside(x - margin, y - margin))
                     {
-                        Bind *bind = new Bind(*chips->at(i).inputPins[j]);
+                        Bind *bind = new Bind(*chips->at(i)->inputPins[j]);
                         bind->gInput = draggedGlobalInputPin;
                         draggedGlobalInputPin->binds->push_back(bind);
                         isPinFound = true;
-                        CordDouble c1 = CordDouble{chips->at(i).inputPins[j]->x, chips->at(i).inputPins[j]->y};
+                        CordDouble c1 = CordDouble{chips->at(i)->inputPins[j]->x, chips->at(i)->inputPins[j]->y};
                         draggedWire->breakPoints->push_back(c1);
                         Wire *wire = new Wire();
                         for (int i = 0; i < draggedWire->breakPoints->size(); i++)
@@ -468,7 +541,7 @@ void ChipArea::onMyLeftClick(int n_press, double x, double y)
                             wire->breakPoints->push_back(draggedWire->breakPoints->at(i));
                         }
                         bind->wire = wire;
-                        chips->at(i).inputPins[j]->bind = bind;
+                        chips->at(i)->inputPins[j]->bind = bind;
                         clear_actions();
                         break;
                     }
@@ -510,13 +583,13 @@ void ChipArea::onMyLeftClick(int n_press, double x, double y)
             // check input pins
             for (int i = 0; i < chips->size(); i++)
             {
-                for (int j = 0; j < chips->at(i).inputPins.size(); j++)
+                for (int j = 0; j < chips->at(i)->inputPins.size(); j++)
                 {
-                    if (chips->at(i).inputPins[j]->isInside(x - margin, y - margin))
+                    if (chips->at(i)->inputPins[j]->isInside(x - margin, y - margin))
                     {
-                        draggedOutputPin->bindTo(*chips->at(i).inputPins[j]);
+                        draggedOutputPin->bindTo(*chips->at(i)->inputPins[j]);
                         isPinFound = true;
-                        CordDouble c1 = CordDouble{chips->at(i).inputPins[j]->x, chips->at(i).inputPins[j]->y};
+                        CordDouble c1 = CordDouble{chips->at(i)->inputPins[j]->x, chips->at(i)->inputPins[j]->y};
                         draggedWire->breakPoints->push_back(c1);
                         Wire *wire = new Wire();
                         for (int i = 0; i < draggedWire->breakPoints->size(); i++)
@@ -567,16 +640,16 @@ void ChipArea::onMyLeftClick(int n_press, double x, double y)
             // check output pins
             for (int i = 0; i < chips->size(); i++)
             {
-                for (int j = 0; j < chips->at(i).outputPins.size(); j++)
+                for (int j = 0; j < chips->at(i)->outputPins.size(); j++)
                 {
-                    if (chips->at(i).outputPins[j]->isInside(x - margin, y - margin))
+                    if (chips->at(i)->outputPins[j]->isInside(x - margin, y - margin))
                     {
                         BindToGlobalOutPut *bind = new BindToGlobalOutPut(*draggedGlobalOutputPin);
-                        bind->localOutput = chips->at(i).outputPins[j];
-                        chips->at(i).outputPins[j]->bindsToGlobalOutput->push_back(bind);
+                        bind->localOutput = chips->at(i)->outputPins[j];
+                        chips->at(i)->outputPins[j]->bindsToGlobalOutput->push_back(bind);
                         draggedGlobalOutputPin->bindToGlobalOutput = bind;
                         isPinFound = true;
-                        CordDouble c1 = CordDouble{chips->at(i).outputPins[j]->x, chips->at(i).outputPins[j]->y};
+                        CordDouble c1 = CordDouble{chips->at(i)->outputPins[j]->x, chips->at(i)->outputPins[j]->y};
                         draggedWire->breakPoints->push_back(c1);
                         Wire *wire = new Wire();
                         for (int i = draggedWire->breakPoints->size() - 1; i >= 0; i--)
@@ -625,20 +698,20 @@ void ChipArea::onMyLeftClick(int n_press, double x, double y)
             // check output pins
             for (int i = 0; i < chips->size(); i++)
             {
-                for (int j = 0; j < chips->at(i).outputPins.size(); j++)
+                for (int j = 0; j < chips->at(i)->outputPins.size(); j++)
                 {
-                    if (chips->at(i).outputPins[j]->isInside(x - margin, y - margin))
+                    if (chips->at(i)->outputPins[j]->isInside(x - margin, y - margin))
                     {
-                        chips->at(i).outputPins[j]->bindTo(*draggedInputPin);
+                        chips->at(i)->outputPins[j]->bindTo(*draggedInputPin);
                         isPinFound = true;
-                        CordDouble c1 = CordDouble{chips->at(i).outputPins[j]->x, chips->at(i).outputPins[j]->y};
+                        CordDouble c1 = CordDouble{chips->at(i)->outputPins[j]->x, chips->at(i)->outputPins[j]->y};
                         draggedWire->breakPoints->push_back(c1);
                         Wire *wire = new Wire();
                         for (int i = draggedWire->breakPoints->size() - 1; i >= 0; i--)
                         {
                             wire->breakPoints->push_back(draggedWire->breakPoints->at(i));
                         }
-                        chips->at(i).outputPins[j]->binds->at(chips->at(i).outputPins[j]->binds->size() - 1)->wire = wire;
+                        chips->at(i)->outputPins[j]->binds->at(chips->at(i)->outputPins[j]->binds->size() - 1)->wire = wire;
                         clear_actions();
                         break;
                     }
@@ -652,8 +725,12 @@ void ChipArea::onMyLeftClick(int n_press, double x, double y)
             }
         }
     }
+
+    // wire is not dragging
     else
     {
+        updateClickedWires(mousePos);
+
         // first check global input pins
         for (int i = 0; i < globalInputPins->size(); i++)
         {
@@ -670,28 +747,28 @@ void ChipArea::onMyLeftClick(int n_press, double x, double y)
         // now check all chips
         for (int i = 0; i < chips->size(); i++)
         {
-            // for(int j = 0;j<chips->at(i).inputPins.size();j++){
-            //     if(chips->at(i).inputPins[j]->isInside(x - margin, y - margin)){
-            //         draggedInputPin = chips->at(i).inputPins[j];
+            // for(int j = 0;j<chips->at(i)->inputPins.size();j++){
+            //     if(chips->at(i)->inputPins[j]->isInside(x - margin, y - margin)){
+            //         draggedInputPin = chips->at(i)->inputPins[j];
             //         break;
             //     }
             // }
 
-            if (chips->at(i).isMouseInside(x - margin, y - margin))
+            if (chips->at(i)->isMouseInside(x - margin, y - margin))
             {
-                chips->at(i).isClicked = true;
+                chips->at(i)->isClicked = true;
             }
             else
             {
-                chips->at(i).isClicked = false;
+                chips->at(i)->isClicked = false;
             }
 
-            for (int j = 0; j < chips->at(i).outputPins.size(); j++)
+            for (int j = 0; j < chips->at(i)->outputPins.size(); j++)
             {
 
-                if (chips->at(i).outputPins[j]->isInside(x - margin, y - margin))
+                if (chips->at(i)->outputPins[j]->isInside(x - margin, y - margin))
                 {
-                    draggedOutputPin = chips->at(i).outputPins[j];
+                    draggedOutputPin = chips->at(i)->outputPins[j];
                     draggedWire = new Wire();
                     draggedWire->breakPoints->push_back(CordDouble{double(draggedOutputPin->x), double(draggedOutputPin->y)});
                     break;
@@ -699,11 +776,11 @@ void ChipArea::onMyLeftClick(int n_press, double x, double y)
             }
 
             // check input
-            for (int j = 0; j < chips->at(i).inputPins.size(); j++)
+            for (int j = 0; j < chips->at(i)->inputPins.size(); j++)
             {
-                if (chips->at(i).inputPins[j]->isInside(x - margin, y - margin))
+                if (chips->at(i)->inputPins[j]->isInside(x - margin, y - margin))
                 {
-                    draggedInputPin = chips->at(i).inputPins[j];
+                    draggedInputPin = chips->at(i)->inputPins[j];
                     draggedWire = new Wire();
                     draggedWire->breakPoints->push_back(CordDouble{double(draggedInputPin->x), double(draggedInputPin->y)});
                     break;
@@ -736,28 +813,117 @@ void ChipArea::onMyLeftClick(int n_press, double x, double y)
     run();
 }
 
+void ChipArea::onMyDeleteKeyPressed()
+{
+    for (int i = 0; i < chips->size();i++)
+    {
+        //chips
+        if (chips->at(i)->isClicked)
+        {
+            std::cout << "chip: " << i << "is deleted." << std::endl;
+            auto it = chips->begin() + i;
+            chips->erase(it); // wires are handled in the destructor
+            canvas->queue_draw();
+            return;
+        }
+
+
+        //WIRES//
+
+        // wires from outputs
+        for (int j = 0; j < chips->at(i)->outputPins.size(); j++)
+        {
+
+            // outputs to other's input
+            if (chips->at(i)->outputPins[j]->binds->size() != 0)
+            {
+                for (int bind = 0; bind < (chips->at(i)->outputPins[j]->binds->size()); bind++)
+                {
+                    if (chips->at(i)->outputPins[j]->binds->at(bind)->wire != nullptr)
+                    {
+                        if (chips->at(i)->outputPins[j]->binds->at(bind)->isClicked)
+                        {
+                            delete chips->at(i)->outputPins[j]->binds->at(bind);
+                            auto it = chips->at(i)->outputPins[j]->binds->begin() + bind;
+                            chips->at(i)->outputPins[j]->binds->erase(it);
+                            canvas->queue_draw();
+                            return;
+                        }
+                        else
+                        {
+                        }
+                    }
+                }
+            }
+
+            // wires from chip's outputs to globaloutputs
+            if (chips->at(i)->outputPins[j]->bindsToGlobalOutput->size() > 0)
+            {
+                for (int bindToGlobalOutput = 0; bindToGlobalOutput < (chips->at(i)->outputPins[j]->bindsToGlobalOutput->size()); bindToGlobalOutput++)
+                {
+
+                    if (chips->at(i)->outputPins[j]->bindsToGlobalOutput->at(bindToGlobalOutput)->wire != nullptr)
+                    {
+                        if (chips->at(i)->outputPins[j]->bindsToGlobalOutput->at(bindToGlobalOutput)->isClicked)
+                        {
+                            delete chips->at(i)->outputPins[j]->bindsToGlobalOutput->at(bindToGlobalOutput);
+                            auto it = chips->at(i)->outputPins[j]->bindsToGlobalOutput->begin() + bindToGlobalOutput;
+                            chips->at(i)->outputPins[j]->bindsToGlobalOutput->erase(it);
+                            canvas->queue_draw();
+                            return;
+                        }
+                        else
+                        {
+                        }
+                    }
+                }
+            }
+
+            // wires from globalInputs
+            for (int pin = 0; pin < globalInputPins->size(); pin++)
+            {
+                for (int bind = 0; bind < globalInputPins->at(pin)->binds->size(); bind++)
+                {
+                    if (globalInputPins->at(pin)->binds->at(bind)->isClicked)
+                    {
+                        delete globalInputPins->at(pin)->binds->at(bind);
+                        auto it = globalInputPins->at(pin)->binds->begin() + bind;
+                        globalInputPins->at(pin)->binds->erase(it);
+                        canvas->queue_draw();
+                        return;
+                    }
+                    else
+                    {
+                    }
+                }
+            }
+        }
+    }
+}
+
 void ChipArea::on_my_drag_begin(double start_x, double start_y)
 {
     for (int i = 0; i < chips->size(); i++)
     {
 
-        bool isInside = (*chips)[i].isMouseInside(start_x - margin, start_y - margin);
+        bool isInside = (*chips)[i]->isMouseInside(start_x - margin, start_y - margin);
         if (isInside)
         {
-            draggedChip = &(*chips)[i];
+            // draggedChip = &(*chips)[i];
+            draggedChip = chips->at(i);
 
-            MouseOffset offset = (*chips)[i].getMouseOffset(start_x - margin, start_y - margin);
+            MouseOffset offset = chips->at(i)->getMouseOffset(start_x - margin, start_y - margin);
             // print the mouse offset
 
-            double new_x = (start_x - margin) - (*chips)[i].structure->boundingBox->x - offset.x;
-            double new_y = (start_y - margin) - (*chips)[i].structure->boundingBox->y - offset.y;
+            double new_x = (start_x - margin) - chips->at(i)->structure->boundingBox->x - offset.x;
+            double new_y = (start_y - margin) - chips->at(i)->structure->boundingBox->y - offset.y;
 
             // print new_x and new_y
-            (*chips)[i].structure->boundingBox->x += new_x;
-            (*chips)[i].structure->boundingBox->y += new_y;
+            chips->at(i)->structure->boundingBox->x += new_x;
+            chips->at(i)->structure->boundingBox->y += new_y;
 
-            (*chips)[i].structure->boundingBox->intial_x += new_x;
-            (*chips)[i].structure->boundingBox->intial_y += new_y;
+            chips->at(i)->structure->boundingBox->intial_x += new_x;
+            chips->at(i)->structure->boundingBox->intial_y += new_y;
             break;
         }
     }
@@ -796,10 +962,10 @@ void ChipArea::on_my_drag_end(double offset_x, double offset_y)
     draggedChip->structure->setLoc(new_x, new_y);
     // clear draggedChip
     draggedChip = nullptr;
-    // (*chips)[i].isDragging = false;
-    // double new_x = (*chips)[i].structure->boundingBox->x + offset_x - (*chips)[i].structure->boundingBox->intial_x;
-    // double new_y = (*chips)[i].structure->boundingBox->y + offset_y - (*chips)[i].structure->boundingBox->intial_y;
-    // (*chips)[i].structure->setLoc(new_x, new_y);
+    // chips->at(i)->isDragging = false;
+    // double new_x = chips->at(i)->structure->boundingBox->x + offset_x - chips->at(i)->structure->boundingBox->intial_x;
+    // double new_y = chips->at(i)->structure->boundingBox->y + offset_y - chips->at(i)->structure->boundingBox->intial_y;
+    // chips->at(i)->structure->setLoc(new_x, new_y);
 
     canvas->queue_draw();
 }
@@ -809,7 +975,6 @@ void ChipArea::createAndChip(int index, int posX, int posY)
     ChipStructure *structureAND = new ChipStructure(new ChipBoundingBox{100, 100, posX, posY});
     std::vector<InputPin *> inputPins;
     std::vector<OutputPin *> outputPins;
-
     InputPin *inputPinAND_A = new InputPin("A", 0);
     InputPin *inputPinAND_B = new InputPin("B", 1);
     OutputPin *outputPinAND_Y = new OutputPin("Y", 0);
@@ -852,7 +1017,7 @@ void ChipArea::clear_canvas(const Cairo::RefPtr<Cairo::Context> &cr)
 void ChipArea::run()
 {
 
-    std::vector<Chip *> chips;
+    std::vector<Chip *> toRunChips;
 
     for (int i = 0; i < globalInputPins->size(); i++)
     {
@@ -861,20 +1026,21 @@ void ChipArea::run()
             globalInputPins->at(i)->binds->at(j)->input.state = globalInputPins->at(i)->state;
             if (globalInputPins->at(i)->binds->at(j)->input.chip != nullptr)
             {
-                chips.push_back(globalInputPins->at(i)->binds->at(j)->input.chip);
+                toRunChips.push_back(globalInputPins->at(i)->binds->at(j)->input.chip);
             }
         }
-        for(int j = 0;j< globalInputPins->at(i)->gbinds->size();j++){
+        for (int j = 0; j < globalInputPins->at(i)->gbinds->size(); j++)
+        {
             globalInputPins->at(i)->gbinds->at(j)->output.state = globalInputPins->at(i)->state;
             if (globalInputPins->at(i)->gbinds->at(j)->output.chip != nullptr)
             {
-                chips.push_back(globalInputPins->at(i)->gbinds->at(j)->output.chip);
+                toRunChips.push_back(globalInputPins->at(i)->gbinds->at(j)->output.chip);
             }
         }
     }
-    for (int i = 0; i < chips.size(); i++)
+    for (int i = 0; i < toRunChips.size(); i++)
     {
-        chips[i]->run();
+        toRunChips[i]->run();
     }
 }
 
@@ -928,7 +1094,7 @@ void ChipArea::draw_on_canvas(const Cairo::RefPtr<Cairo::Context> &cr,
 
     for (int i = 0; i < chips->size(); i++)
     {
-        (*chips)[i].draw(cr);
+        chips->at(i)->draw(cr);
     }
 
     // global input pins
@@ -978,10 +1144,17 @@ void ChipArea::draw_on_canvas(const Cairo::RefPtr<Cairo::Context> &cr,
 
         for (int j = 0; j < globalInputPins->at(i)->binds->size(); j++)
         {
+            if (globalInputPins->at(i)->binds->at(j)->isClicked)
+            {
+                cr->set_source_rgb(255.0 / 255.0, 0, 0);
+                cr->set_line_width(8);
+                draw_wire_between(globalInputPins->at(i)->binds->at(j), cr);
+            }
+
             cr->set_line_width(4);
             if (globalInputPins->at(i)->binds->at(j)->isHovered)
             {
-                cr->set_line_width(8);
+                cr->set_line_width(6);
             }
             else
             {
@@ -1019,9 +1192,10 @@ void ChipArea::draw_on_canvas(const Cairo::RefPtr<Cairo::Context> &cr,
         }
     }
 
+    // chips
     for (int i = 0; i < chips->size(); i++)
     {
-        (*chips)[i].draw(cr);
+        chips->at(i)->draw(cr);
     }
 }
 
@@ -1059,11 +1233,11 @@ ChipSelectorUI::ChipSelectorUI(ChipArea *area, ChipSelectorMenu *menu)
 
     // for (int i = 0; i < 5; i++)
     // {
-    //     chips[i] = Gtk::manage(new Gtk::Button());
-    //     chips[i]->set_label("Chip " + std::to_string(i));
-    //     chips[i]->set_size_request(50, 50);
-    //     chips[i]->set_css_classes({"chip-btn"});
-    //     append(*chips[i]);
+    //     chips->at(i) = Gtk::manage(new Gtk::Button());
+    //     chips->at(i)->set_label("Chip " + std::to_string(i));
+    //     chips->at(i)->set_size_request(50, 50);
+    //     chips->at(i)->set_css_classes({"chip-btn"});
+    //     append(*chips->at(i));
     // }
 };
 
@@ -1071,8 +1245,6 @@ void ChipSelectorUI::on_chip_selected(int index)
 {
     selected_chip = index;
 }
-
-Bind::Bind(InputPin &input) : input(input){};
 
 BindToGlobalOutPut::BindToGlobalOutPut(GlobalOutputPin &output) : output(output){};
 
@@ -1163,6 +1335,7 @@ void OutputPin::bindTo(InputPin &inputPin)
 void OutputPin::bindToGlobalOutput(GlobalOutputPin &output)
 {
     BindToGlobalOutPut *bind = new BindToGlobalOutPut(output);
+    bind->localOutput = this;
     bindsToGlobalOutput->push_back(bind);
 }
 
@@ -1213,6 +1386,10 @@ Chip::Chip(ChipStructure *structure, std::vector<InputPin *> inputPins, std::vec
     }
 };
 
+Chip::~Chip()
+{
+    std::cout << "Destructor called" << std::endl;
+}
 void Chip::addInputPin(InputPin *inputPin)
 {
     inputPin->chip = this;
@@ -1225,10 +1402,14 @@ void Chip::addOutputPin(OutputPin *outputPin)
     outputPins.push_back(outputPin);
 }
 
-void Chip::setCustomChip(CustomChip *customChipT){
-    if(type == AND || type == NOT){
+void Chip::setCustomChip(CustomChip *customChipT)
+{
+    if (type == AND || type == NOT)
+    {
         std::cout << "It is not Custom Chip" << std::endl;
-    }else{
+    }
+    else
+    {
         customChip = customChipT;
     }
 }
@@ -1273,7 +1454,7 @@ void Chip::run()
     }
 
     // array of chips
-    std::vector<Chip *> chips;
+    std::vector<Chip *> toRunChips;
 
     for (int i = 0; i < outputPins.size(); i++)
     {
@@ -1282,7 +1463,7 @@ void Chip::run()
             outputPins[i]->binds->at(j)->input.state = outputPins[i]->state;
             if (outputPins[i]->binds->at(j)->input.chip != nullptr)
             {
-                chips.push_back(outputPins[i]->binds->at(j)->input.chip);
+                toRunChips.push_back(outputPins[i]->binds->at(j)->input.chip);
             }
         }
     }
@@ -1295,9 +1476,9 @@ void Chip::run()
         }
     }
 
-    for (int i = 0; i < chips.size(); i++)
+    for (int i = 0; i < toRunChips.size(); i++)
     {
-        chips[i]->run();
+        toRunChips[i]->run();
     }
 }
 
@@ -1456,10 +1637,17 @@ void Chip::draw(const Cairo::RefPtr<Cairo::Context> &cr)
     {
         for (int j = 0; j < outputPins[i]->binds->size(); j++)
         {
+            if (outputPins[i]->binds->at(j)->isClicked)
+            {
+                cr->set_source_rgb(255.0 / 255.0, 0, 0);
+                cr->set_line_width(8);
+                draw_wire_between(outputPins[i]->binds->at(j), cr);
+            }
+
             cr->set_line_width(4);
             if (outputPins[i]->binds->at(j)->isHovered)
             {
-                cr->set_line_width(8);
+                cr->set_line_width(6);
             }
             else
             {
@@ -1487,10 +1675,17 @@ void Chip::draw(const Cairo::RefPtr<Cairo::Context> &cr)
     {
         for (int j = 0; j < outputPins[i]->bindsToGlobalOutput->size(); j++)
         {
+            if (outputPins[i]->bindsToGlobalOutput->at(j)->isClicked)
+            {
+                cr->set_source_rgb(255.0 / 255.0, 0, 0);
+                cr->set_line_width(8);
+                draw_wire_between(outputPins[i]->bindsToGlobalOutput->at(j), cr);
+            }
+
             cr->set_line_width(4);
             if (outputPins[i]->bindsToGlobalOutput->at(j)->isHovered)
             {
-                cr->set_line_width(8);
+                cr->set_line_width(6);
             }
             else
             {
@@ -1604,22 +1799,28 @@ void ChipSelectorMenu::quit()
     scrn_stack->stack->set_transition_type(Gtk::StackTransitionType::SLIDE_RIGHT);
     scrn_stack->show_home_menu();
 }
-void ChipSelectorMenu::save_circuit(){
+void ChipSelectorMenu::save_circuit()
+{
     Glib::OptionGroup::vecstrings chipFiles = getFilesWithExtension(".", ".chip");
     std::string chipName = scrn_stack->chipArea->save_popup->getEntryText();
     std::string chipFilename = chipName + ".chip";
     std::cout << chipFilename << std::endl;
     // check if chipFiles contains chipName
     bool isPresent = false;
-    for(int i = 0; i < chipFiles.size(); i++){
-        if(chipFiles[i] == chipFilename){
+    for (int i = 0; i < chipFiles.size(); i++)
+    {
+        if (chipFiles[i] == chipFilename)
+        {
             isPresent = true;
             break;
         }
     }
-    if(isPresent){
+    if (isPresent)
+    {
         scrn_stack->chipArea->save_popup->showError();
-    }else{
+    }
+    else
+    {
         scrn_stack->chipArea->save_circuit(chipName);
         scrn_stack->chipArea->save_popup->showUI();
         hide();
@@ -1629,3 +1830,32 @@ void ChipSelectorMenu::save_circuit(){
     }
     scrn_stack->chipArea->save_popup->hideUI();
 }
+
+// void deleteOutputPin()
+// {
+//     for(int i =0; i<binds->size();i++)
+//     {
+//         delete binds->at(i);
+//     }
+
+//     for(int i =0; i<bindsToGlobalOutput->size();i++)
+//     {
+//         delete bindsToGlobalOutput->at(0);
+//     }
+// }
+
+// void Wire::myDelete()
+// {
+//     delete breakPoints;
+// };
+
+Bind::~Bind()
+{
+    input.state = 0;
+    delete wire;
+};
+
+// void InputPin::myDelete()
+// {
+//     delete bind;
+// }

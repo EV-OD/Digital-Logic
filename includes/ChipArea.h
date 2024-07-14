@@ -9,8 +9,7 @@
 #include <filesystem>
 #include <iostream>
 
-std::vector<std::string> getFilesWithExtension(const std::string& directory, const std::string& extension);
-
+std::vector<std::string> getFilesWithExtension(const std::string &directory, const std::string &extension);
 
 class ScreenStack;
 
@@ -33,7 +32,6 @@ struct CordDouble
     double y;
 };
 
-
 class ChipArea : public Gtk::Frame
 {
 public:
@@ -50,18 +48,16 @@ public:
 
     Gtk::Overlay *overlay;
     Dialog *save_popup = nullptr;
-    
 
-    std::vector<Chip> *chips;
+    std::vector<Chip *> *chips;
     std::vector<std::string> chipFiles;
     void addChip(Chip *chip);
     Chip *draggedChip;
     GlobalInputPin *draggedGlobalInputPin = nullptr;
     OutputPin *draggedOutputPin = nullptr;
-    
+
     GlobalOutputPin *draggedGlobalOutputPin = nullptr;
     InputPin *draggedInputPin = nullptr;
-
 
     Wire *draggedWire = nullptr;
 
@@ -73,7 +69,6 @@ public:
     std::vector<GlobalInputPin *> *globalInputPins;
     std::vector<GlobalOutputPin *> *globalOutputPins;
 
-
     ChipSelectorMenu *ActionMenu;
 
     Glib::RefPtr<Gtk::GestureDrag> m_GestureDrag;
@@ -84,31 +79,29 @@ public:
     void on_my_drag_update(double offset_x, double offset_y);
 
     bool isHoveringLine(CordDouble MousePos, CordDouble A, CordDouble B, double tolerance);
-    bool isHoveringWire(CordDouble MousePos, Wire * wire, double tolerance);
+    bool isHoveringWire(CordDouble MousePos, Wire *wire, double tolerance);
 
     void updateHoveringChipsPins(CordDouble mousePos);
     void updateHoveringWires(CordDouble mousePos);
+    void updateClickedWires(CordDouble mousePos);
 
     bool shouldQueueDraw = false;
 
-
     void onMyLeftClick(int n_press, double x, double y);
+    void onMyDeleteKeyPressed();
 
     void draw_on_canvas(const Cairo::RefPtr<Cairo::Context> &cr,
                         int width, int height);
-    
+
     void on_my_motion(double x, double y);
     bool on_my_key_pressed(guint keyval, guint keycode, Gdk::ModifierType state);
-
 
     void clear_canvas(const Cairo::RefPtr<Cairo::Context> &cr);
     void createAndChip(int index, int posX, int posY);
     void createNotChip(int index, int posX, int posY);
 
-
-
     void save_circuit(std::string &name);
-    Chip* load_chip(std::string &name);
+    Chip *load_chip(std::string &name);
     void load_all_chips();
     void load_each_chip(std::string &filename);
     void load_chip_to_circuit(std::string &name);
@@ -123,9 +116,9 @@ public:
     ChipSelectorUI(ChipArea *area, ChipSelectorMenu *menu);
     ChipSelectorMenu *menu;
     Gtk::Button *chips[5];
-    
+
     Gtk::Button *menu_btn;
-    
+
     int test;
     int selected_chip = -1;
 
@@ -146,26 +139,32 @@ struct ChipBoundingBox
 
 void clear_canvas(const Cairo::RefPtr<Cairo::Context> &cr);
 
-
-
-class Wire{
-    public:
+class Wire
+{
+public:
     std::vector<CordDouble> *breakPoints;
-    Wire(){
+    Wire()
+    {
         breakPoints = new std::vector<CordDouble>();
+    }
+    ~Wire()
+    {
+        std::cout<<"wire destructor called"<<std::endl;
+        delete breakPoints;
     }
 };
 
 class Bind
 {
 public:
-    Bind(InputPin &input); // Accept a reference to InputPin
+    Bind(InputPin &input) : input(input){}; // Accept a reference to InputPin
+    ~Bind();
     void printConnection();
     InputPin &input; // Store input as a reference
     OutputPin *output = nullptr;
     GlobalInputPin *gInput = nullptr;
-    Wire *wire=nullptr;
-    bool selected = false;
+    Wire *wire = nullptr;
+    bool isClicked = false;
     bool isHovered = false;
 };
 
@@ -176,12 +175,11 @@ public:
     GlobalOutputPin &output;                     // Store output as a reference
     OutputPin *localOutput = nullptr;
     GlobalInputPin *gInput = nullptr;
-    Wire *wire=nullptr;
-    bool selected = false;
+    Wire *wire = nullptr;
+    bool isClicked = false;
     bool isHovered = false;
+    void myDelete();
 };
-
-
 
 class Pin
 {
@@ -201,7 +199,7 @@ public:
     Cord getCord();
     Chip *chip;
     int state = 0;
-    bool isHovered = false; 
+    bool isHovered = false;
     void drawHovered(const Cairo::RefPtr<Cairo::Context> &cr);
     void drawNormal(const Cairo::RefPtr<Cairo::Context> &cr);
 };
@@ -218,15 +216,17 @@ class OutputPin : public Pin
 public:
     OutputPin(std::string name, int index) : Pin(name, index)
     {
-        binds = new std::vector<Bind*>();
-        bindsToGlobalOutput = new std::vector<BindToGlobalOutPut*>();
+        binds = new std::vector<Bind *>();
+        bindsToGlobalOutput = new std::vector<BindToGlobalOutPut *>();
     }
     // bind should be array
     std::vector<Bind *> *binds;
     std::vector<BindToGlobalOutPut *> *bindsToGlobalOutput;
     void bindTo(InputPin &input);
     void bindToGlobalOutput(GlobalOutputPin &output);
+    void myDelete(OutputPin outputPin);
 };
+
 class ChipStructure
 {
 public:
@@ -261,11 +261,12 @@ enum activeStatus
     OFF
 };
 
-class CustomChip{
-    public:
-    CustomChip(std::vector<GlobalInputPin*> *globalInputPins, std::vector<GlobalOutputPin*> *globalOutputPins);
-    std::vector<GlobalInputPin*> *globalInputPins;
-    std::vector<GlobalOutputPin*> *globalOutputPins;
+class CustomChip
+{
+public:
+    CustomChip(std::vector<GlobalInputPin *> *globalInputPins, std::vector<GlobalOutputPin *> *globalOutputPins);
+    std::vector<GlobalInputPin *> *globalInputPins;
+    std::vector<GlobalOutputPin *> *globalOutputPins;
     void run();
 };
 
@@ -273,7 +274,7 @@ class Chip
 {
 public:
     Chip(ChipStructure *structure, std::vector<InputPin *> inputPins, std::vector<OutputPin *> outputPins, std::string name);
-
+    ~Chip();
     ChipStructure *structure;
     std::vector<InputPin *> inputPins;
     std::vector<OutputPin *> outputPins;
@@ -300,11 +301,11 @@ public:
         this->type = type;
     }
     void setCustomChip(CustomChip *customChip);
-    protected:
+    void myDelete();
+
+protected:
     CustomChip *customChip = nullptr;
 };
-
-
 
 class GlobalInputPin : public Pin
 {
@@ -312,18 +313,17 @@ public:
     GlobalInputPin(int index, int y) : Pin("Input", index)
     {
         this->y = y;
-        binds = new std::vector<Bind*>();
-        gbinds = new std::vector<BindToGlobalOutPut*>();
+        binds = new std::vector<Bind *>();
+        gbinds = new std::vector<BindToGlobalOutPut *>();
         radius = 20;
     }
     // bind should be array
-    std::vector<Bind*> *binds;
-    std::vector<BindToGlobalOutPut*> *gbinds;
+    std::vector<Bind *> *binds;
+    std::vector<BindToGlobalOutPut *> *gbinds;
 
     void bindTo(InputPin &input);
     ChipBoundingBox *boundingBox;
     bool IsToggleBtnInside(double mouseX, double mouseY);
-    
 };
 
 class GlobalOutputPin : public Pin
@@ -335,7 +335,6 @@ public:
         radius = 20;
     }
     BindToGlobalOutPut *bindToGlobalOutput = nullptr;
-
 };
 
 class ChipSelectorMenu : public Gtk::Box
@@ -353,6 +352,5 @@ public:
     void save_circuit();
     void show_save_popup();
 };
-
 
 #endif
