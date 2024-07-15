@@ -179,13 +179,13 @@ class BindToGlobalOutPut
 {
 public:
     BindToGlobalOutPut(GlobalOutputPin &output); // Accept a reference to OutputPin
+    ~BindToGlobalOutPut(); 
     GlobalOutputPin &output;                     // Store output as a reference
     OutputPin *localOutput = nullptr;
     GlobalInputPin *gInput = nullptr;
     Wire *wire = nullptr;
     bool isClicked = false;
     bool isHovered = false;
-    void myDelete();
 };
 
 class Pin
@@ -215,6 +215,7 @@ class InputPin : public Pin
 {
 public:
     InputPin(std::string name, int index) : Pin(name, index){};
+    ~InputPin();
     Bind *bind = nullptr;
 };
 
@@ -226,12 +227,12 @@ public:
         binds = new std::vector<Bind *>();
         bindsToGlobalOutput = new std::vector<BindToGlobalOutPut *>();
     }
+    ~OutputPin();
     // bind should be array
     std::vector<Bind *> *binds;
     std::vector<BindToGlobalOutPut *> *bindsToGlobalOutput;
     void bindTo(InputPin &input);
     void bindToGlobalOutput(GlobalOutputPin &output);
-    void myDelete(OutputPin outputPin);
 };
 
 class ChipStructure
@@ -308,7 +309,6 @@ public:
         this->type = type;
     }
     void setCustomChip(CustomChip *customChip);
-    void myDelete();
 
 protected:
     CustomChip *customChip = nullptr;
