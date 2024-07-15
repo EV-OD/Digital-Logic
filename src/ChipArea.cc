@@ -821,24 +821,31 @@ void ChipArea::onMyLeftClick(int n_press, double x, double y)
 
     std::cout << "MouseX: " << x - margin << " MouseY: " << y - margin << std::endl;
     std::cout << "globalOutputPinPlusActionX:" << globalOutputPinPlusAction->x << " globalOutputPinPlusActionY:" << globalOutputPinPlusAction->y << std::endl;
-    if(globalInputPinPlusAction->isMouseInside(x - margin, y - margin)){
+    if (globalInputPinPlusAction->isMouseInside(x - margin, y - margin))
+    {
         int size = globalInputPins->size();
         int y = (size == 0 ? 100 : 100 + (size * 50));
         GlobalInputPin *globalInputPin = new GlobalInputPin(0, y);
         globalInputPins->push_back(globalInputPin);
-    }else if(globalInputPinMinusAction->isMouseInside(x - margin, y - margin)){
-        if(globalInputPins->size() > 0){
+    }
+    else if (globalInputPinMinusAction->isMouseInside(x - margin, y - margin))
+    {
+        if (globalInputPins->size() > 0)
+        {
             globalInputPins->pop_back();
         }
     }
-    if(globalOutputPinPlusAction->isMouseInside(x - margin, y - margin)){
+    if (globalOutputPinPlusAction->isMouseInside(x - margin, y - margin))
+    {
         int size = globalOutputPins->size();
         int y = (size == 0 ? 100 : 100 + (size * 50));
         GlobalOutputPin *globalOutputPin = new GlobalOutputPin(size, y);
         globalOutputPins->push_back(globalOutputPin);
     }
-    else if(globalOutputPinMinusAction->isMouseInside(x - margin, y - margin)){
-        if(globalOutputPins->size() > 0){
+    else if (globalOutputPinMinusAction->isMouseInside(x - margin, y - margin))
+    {
+        if (globalOutputPins->size() > 0)
+        {
             globalOutputPins->pop_back();
         }
     }
@@ -847,20 +854,20 @@ void ChipArea::onMyLeftClick(int n_press, double x, double y)
 
 void ChipArea::onMyDeleteKeyPressed()
 {
-    for (int i = 0; i < chips->size();i++)
+    for (int i = 0; i < chips->size(); i++)
     {
-        //chips
+        // CHIPS //
         if (chips->at(i)->isClicked)
         {
-            std::cout << "chip: " << i << "is deleted." << std::endl;
             auto it = chips->begin() + i;
-            chips->erase(it); // wires are handled in the destructor
+            delete chips->at(i);
+            chips->erase(it);
+            run();
             canvas->queue_draw();
             return;
         }
 
-
-        //WIRES//
+        // WIRES//
 
         // wires from outputs
         for (int j = 0; j < chips->at(i)->outputPins.size(); j++)
@@ -876,6 +883,7 @@ void ChipArea::onMyDeleteKeyPressed()
                         if (chips->at(i)->outputPins[j]->binds->at(bind)->isClicked)
                         {
                             delete chips->at(i)->outputPins[j]->binds->at(bind);
+                            chips->at(i)->outputPins[j]->binds->at(bind) = NULL; // because the pointed pin has the same bind
                             auto it = chips->at(i)->outputPins[j]->binds->begin() + bind;
                             chips->at(i)->outputPins[j]->binds->erase(it);
                             canvas->queue_draw();
@@ -899,6 +907,7 @@ void ChipArea::onMyDeleteKeyPressed()
                         if (chips->at(i)->outputPins[j]->bindsToGlobalOutput->at(bindToGlobalOutput)->isClicked)
                         {
                             delete chips->at(i)->outputPins[j]->bindsToGlobalOutput->at(bindToGlobalOutput);
+                            chips->at(i)->outputPins[j]->bindsToGlobalOutput->at(bindToGlobalOutput) = NULL; // because the pointed pin has the same bind
                             auto it = chips->at(i)->outputPins[j]->bindsToGlobalOutput->begin() + bindToGlobalOutput;
                             chips->at(i)->outputPins[j]->bindsToGlobalOutput->erase(it);
                             canvas->queue_draw();
@@ -919,6 +928,7 @@ void ChipArea::onMyDeleteKeyPressed()
                     if (globalInputPins->at(pin)->binds->at(bind)->isClicked)
                     {
                         delete globalInputPins->at(pin)->binds->at(bind);
+                        globalInputPins->at(pin)->binds->at(bind) = NULL; // because the pointed pin has the same bind
                         auto it = globalInputPins->at(pin)->binds->begin() + bind;
                         globalInputPins->at(pin)->binds->erase(it);
                         canvas->queue_draw();
@@ -1300,6 +1310,111 @@ Pin::Pin(std::string name, int index)
     this->index = index;
 }
 
+// done
+InputPin::~InputPin()
+{
+    std::cout << "Inputpin's destructor called" << std::endl;
+
+    if (bind != nullptr)
+    {
+        // from global inputs
+        if (bind->gInput != nullptr)
+        {
+            std::cout << "here1" << std::endl;
+            for (int i = 0; i < bind->gInput->binds->size(); ++i)
+            {
+                if (&(bind->gInput->binds->at(i)->input) == this)
+                {
+                    auto it = bind->gInput->binds->begin() + i;
+                    // delete bind->gInput->binds->at(i);
+                    bind->gInput->binds->erase(it);
+                    break; // wires are handled in the destructor
+                }
+            }
+        }
+
+        // from chip outputs
+        if (bind->output != nullptr)
+        {
+            std::cout << "here2" << std::endl;
+            for (int i = 0; i < bind->output->binds->size(); ++i)
+            {
+                if (&(bind->output->binds->at(i)->input) == this)
+                {
+                    auto it = bind->output->binds->begin() + i;
+                    // delete bind->output->binds->at(i);
+                    std::cout << "here6" << std::endl;
+                    bind->output->binds->erase(it);
+                    std::cout << "here7" << std::endl;
+                    break; // wires are handled in the destructor
+                }
+            }
+        }
+
+        delete bind;
+    }
+}
+
+OutputPin::~OutputPin()
+{
+    std::cout << "OutputPin's destructor called" << std::endl;
+
+    // normal pins
+    if (binds != nullptr)
+    {
+        auto it = binds->begin();
+        for (int i = 0; i < binds->size(); i++)
+        {
+            binds->at(i)->output->state = 0;
+            delete binds->at(i);
+            binds->at(i) = NULL;
+        }
+        delete binds;
+    }
+
+    // pins binded with global output
+    if (bindsToGlobalOutput != nullptr)
+    {
+        auto it = bindsToGlobalOutput->begin();
+        for (int i = 0; i < bindsToGlobalOutput->size(); i++)
+        {
+            bindsToGlobalOutput->at(i)->output.state = 0;
+            bindsToGlobalOutput->at(i)->output.bindToGlobalOutput = nullptr;
+            delete bindsToGlobalOutput->at(i);
+        }
+        delete bindsToGlobalOutput;
+    }
+}
+
+BindToGlobalOutPut::~BindToGlobalOutPut()
+{
+    output.state = 0;
+    if (wire != nullptr)
+    {
+        delete wire;
+    }
+}
+// if (chips->at(i)->outputPins[j]->bindsToGlobalOutput->size() > 0)
+// {
+//     for (int bindToGlobalOutput = 0; bindToGlobalOutput < (chips->at(i)->outputPins[j]->bindsToGlobalOutput->size()); bindToGlobalOutput++)
+//     {
+
+//         if (chips->at(i)->outputPins[j]->bindsToGlobalOutput->at(bindToGlobalOutput)->wire != nullptr)
+//         {
+//             if (chips->at(i)->outputPins[j]->bindsToGlobalOutput->at(bindToGlobalOutput)->isClicked)
+//             {
+//                 delete chips->at(i)->outputPins[j]->bindsToGlobalOutput->at(bindToGlobalOutput);
+//                 auto it = chips->at(i)->outputPins[j]->bindsToGlobalOutput->begin() + bindToGlobalOutput;
+//                 chips->at(i)->outputPins[j]->bindsToGlobalOutput->erase(it);
+//                 canvas->queue_draw();
+//                 return;
+//             }
+//             else
+//             {
+//             }
+//         }
+//     }
+// }
 void Pin::printCord()
 {
     // std::cout << "Pin X: " << x << " Pin Y: " << y << std::endl;
@@ -1427,7 +1542,27 @@ Chip::Chip(ChipStructure *structure, std::vector<InputPin *> inputPins, std::vec
 
 Chip::~Chip()
 {
-    std::cout << "Destructor called" << std::endl;
+
+    std::cout<<"Chip's destructor called"<<std::endl;
+    
+    // inputpins
+    for (int n = 0; n < inputPins.size(); ++n)
+    {
+        delete inputPins[n];
+    }
+
+    for (int n = 0; n < outputPins.size(); ++n)
+    {
+        delete outputPins[n];
+    }
+
+    delete structure;
+
+    // auto it_out = outputPins.begin();
+    // for (int n = 0; n < outputPins.size(); ++n)
+    // {
+    //     outputPins.erase(it_out+n);
+    // }
 }
 void Chip::addInputPin(InputPin *inputPin)
 {
@@ -1890,11 +2025,8 @@ void ChipSelectorMenu::save_circuit()
 
 Bind::~Bind()
 {
+    std::cout << "destructor is called" << std::endl;
     input.state = 0;
     delete wire;
 };
 
-// void InputPin::myDelete()
-// {
-//     delete bind;
-// }
