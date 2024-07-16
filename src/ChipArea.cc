@@ -1366,7 +1366,8 @@ OutputPin::~OutputPin()
         auto it = binds->begin();
         for (int i = 0; i < binds->size(); i++)
         {
-            binds->at(i)->output->state = 0;
+            binds->at(i)->input.state = 0;
+            binds->at(i)->input.bind = nullptr;
             delete binds->at(i);
             binds->at(i) = nullptr;
         }
