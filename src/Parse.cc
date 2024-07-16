@@ -90,6 +90,9 @@ void Parse::parseChips(ifstream& file) {
         // name
         if(line == "# start"){
             getline(file, line);
+            if(line == "# end"){
+                break;
+            }
         }
         std::string name = line.substr(line.find(".") + 1);
 

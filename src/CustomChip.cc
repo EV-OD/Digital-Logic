@@ -12,6 +12,7 @@ void ChipArea::addChip(Chip *chip)
 {
     chip->index = chips->size();
     chips->push_back(chip);
+
 }
 
 void ChipArea::save_circuit(std::string &name)
@@ -219,14 +220,14 @@ Chip *ChipArea::load_chip(std::string &name)
         // Create input pins
         for (int j = 0; j < chipInfo.inputPin; ++j)
         {
-            InputPin *inputPin = new InputPin("input", j);
+            InputPin *inputPin = new InputPin("I", j);
             inputPins.push_back(inputPin);
         }
 
         // Create output pins
         for (int j = 0; j < chipInfo.outputPin; ++j)
         {
-            OutputPin *outputPin = new OutputPin("output", j);
+            OutputPin *outputPin = new OutputPin("O", j);
             outputPins.push_back(outputPin);
         }
 
@@ -245,7 +246,7 @@ Chip *ChipArea::load_chip(std::string &name)
     {
         GlobalInputPin *globalInputPin = new GlobalInputPin(0, 0);
         globalInputPins->push_back(globalInputPin);
-        std::string nameI = "I";
+        std::string nameI = "A";
         // nameI += std::to_string(i);
         InputPin *inputPin = new InputPin(nameI, i);
         inputPins->push_back(inputPin);
@@ -257,12 +258,13 @@ Chip *ChipArea::load_chip(std::string &name)
     {
         GlobalOutputPin *globalOutputPin = new GlobalOutputPin(0, 0);
         globalOutputPins->push_back(globalOutputPin);
-        std::string nameO = "O";
+        std::string nameO = "Y";
         // nameO += std::to_string(i);
 
         OutputPin *outputPin = new OutputPin(nameO, i);
         outputPins->push_back(outputPin);
     }
+
 
     // // now binds
 
@@ -395,7 +397,13 @@ Chip *ChipArea::load_chip(std::string &name)
 
 void ChipArea::load_chip_to_circuit(std::string &name)
 {
+    // console
     Chip *chip = load_chip(name);
+    if(chip == nullptr)
+    {
+        std::cerr << "Chip is null" << std::endl;
+        return;
+    }
     addChip(chip);
     canvas->queue_draw();
 }
@@ -432,15 +440,14 @@ void CustomChip::run()
                 chips.push_back(globalInputPins->at(i)->binds->at(j)->input.chip);
             }
         }
+
         for (int j = 0; j < globalInputPins->at(i)->gbinds->size(); j++)
         {
             globalInputPins->at(i)->gbinds->at(j)->output.state = globalInputPins->at(i)->state;
-            if (globalInputPins->at(i)->gbinds->at(j)->output.chip != nullptr)
-            {
-                chips.push_back(globalInputPins->at(i)->gbinds->at(j)->output.chip);
-            }
         }
+
     }
+
     for (int i = 0; i < chips.size(); i++)
     {
         chips[i]->run();

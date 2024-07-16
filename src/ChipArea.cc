@@ -1067,7 +1067,7 @@ void ChipArea::clear_canvas(const Cairo::RefPtr<Cairo::Context> &cr)
 void ChipArea::run()
 {
 
-    std::vector<Chip *> toRunChips;
+    std::vector<Chip *> toRunChips = std::vector<Chip *>();
 
     for (int i = 0; i < globalInputPins->size(); i++)
     {
@@ -1082,12 +1082,9 @@ void ChipArea::run()
         for (int j = 0; j < globalInputPins->at(i)->gbinds->size(); j++)
         {
             globalInputPins->at(i)->gbinds->at(j)->output.state = globalInputPins->at(i)->state;
-            if (globalInputPins->at(i)->gbinds->at(j)->output.chip != nullptr)
-            {
-                toRunChips.push_back(globalInputPins->at(i)->gbinds->at(j)->output.chip);
-            }
         }
     }
+
     for (int i = 0; i < toRunChips.size(); i++)
     {
         toRunChips[i]->run();
@@ -1146,7 +1143,6 @@ void ChipArea::draw_on_canvas(const Cairo::RefPtr<Cairo::Context> &cr,
         cr->fill();
         globalOutputPins->at(i)->x = width - globalOutputPins->at(i)->radius - globalPinGap;
     }
-
     for (int i = 0; i < chips->size(); i++)
     {
         chips->at(i)->draw(cr);
@@ -1796,6 +1792,7 @@ void Chip::draw(const Cairo::RefPtr<Cairo::Context> &cr)
         }
     }
 
+
     // text for input pins
     for (int n = 0; n < inputPins.size(); n++)
     {
@@ -1810,9 +1807,12 @@ void Chip::draw(const Cairo::RefPtr<Cairo::Context> &cr)
     {
         cr->set_source_rgb(1.0, 1.0, 1.0);
         cr->move_to(x + width - 25, y + n * (outputPinEachHeight) + (outputPinEachHeight / 2) + 3);
+    
         cr->set_font_size(14);
-        cr->show_text(inputPins[n]->name);
+        cr->show_text(outputPins[n]->name);
+
     }
+
 
     // draw line between input and output pins
     for (int i = 0; i < outputPins.size(); i++)
