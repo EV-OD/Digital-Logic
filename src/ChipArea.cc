@@ -819,8 +819,6 @@ void ChipArea::onMyLeftClick(int n_press, double x, double y)
         }
     }
 
-    std::cout << "MouseX: " << x - margin << " MouseY: " << y - margin << std::endl;
-    std::cout << "globalOutputPinPlusActionX:" << globalOutputPinPlusAction->x << " globalOutputPinPlusActionY:" << globalOutputPinPlusAction->y << std::endl;
     if (globalInputPinPlusAction->isMouseInside(x - margin, y - margin))
     {
         int size = globalInputPins->size();
@@ -859,7 +857,6 @@ void ChipArea::onMyDeleteKeyPressed()
         // CHIPS //
         if (chips->at(i)->isClicked)
         {
-            std::cout<<"deleting Chips"<<std::endl;
             auto it = chips->begin() + i;
             delete chips->at(i);
             chips->erase(it);
@@ -1314,14 +1311,12 @@ Pin::Pin(std::string name, int index)
 // done
 InputPin::~InputPin()
 {
-    std::cout << "Inputpin's destructor called" << std::endl;
 
     if (bind != nullptr)
     {
         // from global inputs
         if (bind->gInput != nullptr)
         {
-            std::cout << "here1" << std::endl;
             for (int i = 0; i < bind->gInput->binds->size(); ++i)
             {
                 if (&(bind->gInput->binds->at(i)->input) == this)
@@ -1337,16 +1332,13 @@ InputPin::~InputPin()
         // from chip outputs
         if (bind->output != nullptr)
         {
-            std::cout << "here2" << std::endl;
             for (int i = 0; i < bind->output->binds->size(); ++i)
             {
                 if (&(bind->output->binds->at(i)->input) == this)
                 {
                     auto it = bind->output->binds->begin() + i;
                     // delete bind->output->binds->at(i);
-                    std::cout << "here6" << std::endl;
                     bind->output->binds->erase(it);
-                    std::cout << "here7" << std::endl;
                     break; // wires are handled in the destructor
                 }
             }
@@ -1358,7 +1350,6 @@ InputPin::~InputPin()
 
 OutputPin::~OutputPin()
 {
-    std::cout << "OutputPin's destructor called" << std::endl;
 
     // normal pins
     if (binds != nullptr)
@@ -1545,7 +1536,6 @@ Chip::Chip(ChipStructure *structure, std::vector<InputPin *> inputPins, std::vec
 Chip::~Chip()
 {
 
-    std::cout<<"Chip's destructor called"<<std::endl;
     
     // inputpins
     for (int n = 0; n < inputPins.size(); ++n)
@@ -1685,6 +1675,10 @@ void Chip::draw(const Cairo::RefPtr<Cairo::Context> &cr)
     // draw rectange
     // draw input and output pins
     // draw the name of the chip
+    int length = name.length();
+    int font_size = 20;
+    Cairo::TextExtents extents;
+    cr->get_text_extents(name, extents);
 
     cr->set_source_rgb(38 / 255.0, 38 / 255.0, 38 / 255.0);
     // calculate height using the max(height of input pins, height of output pins)
@@ -1701,6 +1695,9 @@ void Chip::draw(const Cairo::RefPtr<Cairo::Context> &cr)
 
     int gapper = 25;
     int width = 150;
+    if(length > 4){
+        width = 150 + (length - 4) * 7;
+    }
     int inputHeight = inputPins.size() * gapper;
     int outputHeight = outputPins.size() * gapper;
     int height = inputHeight > outputHeight ? inputHeight : outputHeight;
@@ -1886,12 +1883,10 @@ void Chip::draw(const Cairo::RefPtr<Cairo::Context> &cr)
 
     // draw the name of the chip
     cr->set_source_rgb(1.0, 1.0, 1.0);
-    int font_size = 20;
-    int length = name.length();
-    int nameLengthInPixels = length * font_size;
     cr->set_font_size(font_size);
-
-    cr->move_to(x + (width / 2) - 20, y + (height / 2) + 7);
+    Cairo::TextExtents extents2;
+    cr->get_text_extents(name, extents2);
+    cr->move_to(x + (width / 2) - (extents2.width / 2), y + (height / 2) + 7);
     cr->show_text(name);
     cr->fill();
 }
@@ -2027,7 +2022,6 @@ void ChipSelectorMenu::save_circuit()
 
 Bind::~Bind()
 {
-    std::cout << "destructor is called" << std::endl;
     input.state = 0;
     delete wire;
 };
