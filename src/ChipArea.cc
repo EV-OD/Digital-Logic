@@ -830,7 +830,11 @@ void ChipArea::onMyLeftClick(int n_press, double x, double y)
     {
         if (globalInputPins->size() > 0)
         {
-            globalInputPins->pop_back();
+            // if this pin has bind dont delete
+            if (globalInputPins->at(globalInputPins->size() - 1)->binds->size() == 0 && globalInputPins->at(globalInputPins->size() - 1)->gbinds->size() == 0)
+            {
+                globalInputPins->pop_back();
+            }
         }
     }
     if (globalOutputPinPlusAction->isMouseInside(x - margin, y - margin))
@@ -844,7 +848,11 @@ void ChipArea::onMyLeftClick(int n_press, double x, double y)
     {
         if (globalOutputPins->size() > 0)
         {
-            globalOutputPins->pop_back();
+            // if this pin has bind dont delete
+            if (globalOutputPins->at(globalOutputPins->size() - 1)->bindToGlobalOutput == nullptr)
+            {
+                globalOutputPins->pop_back();
+            }
         }
     }
     run();
@@ -1484,6 +1492,7 @@ void OutputPin::bindToGlobalOutput(GlobalOutputPin &output)
     BindToGlobalOutPut *bind = new BindToGlobalOutPut(output);
     bind->localOutput = this;
     bindsToGlobalOutput->push_back(bind);
+    output.bindToGlobalOutput = bind;
 }
 
 ChipStructure::ChipStructure(ChipBoundingBox *boundingBox)
