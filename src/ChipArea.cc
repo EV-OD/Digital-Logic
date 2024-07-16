@@ -859,6 +859,7 @@ void ChipArea::onMyDeleteKeyPressed()
         // CHIPS //
         if (chips->at(i)->isClicked)
         {
+            std::cout<<"deleting Chips"<<std::endl;
             auto it = chips->begin() + i;
             delete chips->at(i);
             chips->erase(it);
@@ -883,7 +884,9 @@ void ChipArea::onMyDeleteKeyPressed()
                         if (chips->at(i)->outputPins[j]->binds->at(bind)->isClicked)
                         {
                             delete chips->at(i)->outputPins[j]->binds->at(bind);
-                            chips->at(i)->outputPins[j]->binds->at(bind) = NULL; // because the pointed pin has the same bind
+
+                            //find here
+                            chips->at(i)->outputPins[j]->binds->at(bind)->input.bind = nullptr;
                             auto it = chips->at(i)->outputPins[j]->binds->begin() + bind;
                             chips->at(i)->outputPins[j]->binds->erase(it);
                             canvas->queue_draw();
@@ -906,8 +909,8 @@ void ChipArea::onMyDeleteKeyPressed()
                     {
                         if (chips->at(i)->outputPins[j]->bindsToGlobalOutput->at(bindToGlobalOutput)->isClicked)
                         {
+                            chips->at(i)->outputPins[j]->bindsToGlobalOutput->at(bindToGlobalOutput)->output.bindToGlobalOutput =nullptr;
                             delete chips->at(i)->outputPins[j]->bindsToGlobalOutput->at(bindToGlobalOutput);
-                            chips->at(i)->outputPins[j]->bindsToGlobalOutput->at(bindToGlobalOutput) = NULL; // because the pointed pin has the same bind
                             auto it = chips->at(i)->outputPins[j]->bindsToGlobalOutput->begin() + bindToGlobalOutput;
                             chips->at(i)->outputPins[j]->bindsToGlobalOutput->erase(it);
                             canvas->queue_draw();
@@ -927,8 +930,8 @@ void ChipArea::onMyDeleteKeyPressed()
                 {
                     if (globalInputPins->at(pin)->binds->at(bind)->isClicked)
                     {
+                        globalInputPins->at(pin)->binds->at(bind)->input.bind =nullptr;
                         delete globalInputPins->at(pin)->binds->at(bind);
-                        globalInputPins->at(pin)->binds->at(bind) = NULL; // because the pointed pin has the same bind
                         auto it = globalInputPins->at(pin)->binds->begin() + bind;
                         globalInputPins->at(pin)->binds->erase(it);
                         canvas->queue_draw();
@@ -940,7 +943,7 @@ void ChipArea::onMyDeleteKeyPressed()
                 }
             }
         }
-    }
+    }   
 }
 
 void ChipArea::on_my_drag_begin(double start_x, double start_y)
@@ -1123,8 +1126,6 @@ void ChipArea::draw_on_canvas(const Cairo::RefPtr<Cairo::Context> &cr,
 
         globalOutputPins->at(i)->radius = 20;
         cr->set_source_rgb(200 / 255.0, 39 / 255.0, 92 / 255.0);
-        std::cout << "globalOutputPins->at(i)->radius:" << globalOutputPins->at(i)->radius << std::endl;
-        std::cout << "X:" << width - globalOutputPins->at(i)->radius - globalPinGap << " Y:" << globalOutputPins->at(i)->y << std::endl;
         cr->arc(width - globalOutputPins->at(i)->radius - globalPinGap, globalOutputPins->at(i)->y, globalOutputPins->at(i)->radius, 0, 2 * M_PI);
         cr->fill();
 
@@ -1365,9 +1366,10 @@ OutputPin::~OutputPin()
         auto it = binds->begin();
         for (int i = 0; i < binds->size(); i++)
         {
-            binds->at(i)->output->state = 0;
+            binds->at(i)->input.state = 0;
+            binds->at(i)->input.bind = nullptr;
             delete binds->at(i);
-            binds->at(i) = NULL;
+            binds->at(i) = nullptr;
         }
         delete binds;
     }
