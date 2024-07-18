@@ -10,6 +10,7 @@ public:
     void showUI();
     void hideUI();
     void showError();
+    void showError(std::string message);
     void hideError();
     Gtk::Frame *frame;
     Gtk::Entry *entry = nullptr;

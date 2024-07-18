@@ -9,6 +9,60 @@
 #define margin 30
 #define globalPinGap 40
 
+#include <string>
+#include <algorithm>
+#include <vector>
+
+bool isValidFilename(const std::string& filename) {
+    // List of invalid characters for Windows filenames
+    const std::string invalidChars = "<>:\"/\\|?*";
+
+    // Check for leading spaces
+    if (!filename.empty() && filename.front() == ' ') {
+        return false;
+    }
+
+    // Check for invalid characters
+    for (char c : invalidChars) {
+        if (filename.find(c) != std::string::npos) {
+            return false;
+        }
+    }
+
+    // Check for reserved filenames
+    const std::vector<std::string> reservedNames = {
+        "CON", "PRN", "AUX", "NUL",
+        "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
+        "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9"
+    };
+    
+    std::string upperFilename = filename;
+    std::transform(upperFilename.begin(), upperFilename.end(), upperFilename.begin(), ::toupper);
+
+    if (std::find(reservedNames.begin(), reservedNames.end(), upperFilename) != reservedNames.end()) {
+        return false;
+    }
+
+    // Check for trailing spaces or periods
+    if (filename.back() == ' ' || filename.back() == '.') {
+        return false;
+    }
+
+    // Check for empty filename
+    if (filename.empty()) {
+        return false;
+    }
+
+    // Optionally check the length of the filename (e.g., on Windows, the max path length is 260 characters)
+    const size_t maxPathLength = 260;
+    if (filename.length() > maxPathLength) {
+        return false;
+    }
+
+    return true;
+}
+
+
 namespace fs = std::filesystem;
 // Function to get filenames with a specific extension in a directory
 std::vector<std::string> getFilesWithExtension(const std::string &directory, const std::string &extension)
@@ -1999,6 +2053,10 @@ void ChipSelectorMenu::save_circuit()
     {
         scrn_stack->chipArea->save_popup->showError();
     }
+    else if(!isValidFilename(chipName))
+    {
+        scrn_stack->chipArea->save_popup->showError("Invalid Chip Name");
+    }
     else
     {
         scrn_stack->chipArea->save_circuit(chipName);
@@ -2007,8 +2065,8 @@ void ChipSelectorMenu::save_circuit()
         visible = false;
         // scrn_stack->chipArea->load_all_chips();
         scrn_stack->chipArea->load_each_chip(chipFilename);
+        scrn_stack->chipArea->save_popup->hideUI();
     }
-    scrn_stack->chipArea->save_popup->hideUI();
 }
 
 // void deleteOutputPin()

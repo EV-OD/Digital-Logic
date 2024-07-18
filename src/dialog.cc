@@ -66,6 +66,11 @@ void Dialog::showError(){
     error->set_visible(true);
 }
 
+void Dialog::showError(std::string message){
+    error->set_text(message);
+    error->set_visible(true);
+}
+
 void Dialog::hideError(){
     error->set_visible(false);
 }
