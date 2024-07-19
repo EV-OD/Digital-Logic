@@ -524,7 +524,8 @@ void ChipArea::onMyLeftClick(int n_press, double x, double y)
                     bind->wire = wire;
                     globalOutputPins->at(i)->bindToGlobalOutput = bind;
                     clear_actions();
-                    break;
+                    run();
+                    return;
                 }
             }
 
@@ -549,7 +550,8 @@ void ChipArea::onMyLeftClick(int n_press, double x, double y)
                         bind->wire = wire;
                         chips->at(i)->inputPins[j]->bind = bind;
                         clear_actions();
-                        break;
+                        run();
+                        return;
                     }
                 }
             }
