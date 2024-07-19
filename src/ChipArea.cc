@@ -253,18 +253,17 @@ ChipArea::ChipArea(ScreenStack *stack)
 
 bool ChipArea::isHoveringLine(CordDouble mousePos, CordDouble A, CordDouble B, double tolerance)
 {
+    int minDiff = 10;
     double dx = B.x - A.x;
     double dy = B.y - A.y;
-    if (dx == 0)
-    {
-        // Handle vertical line case (special handling)
-        return fabs(mousePos.x - A.x) <= tolerance;
-    }
+    bool isWithinXbounds = (mousePos.x > A.x && mousePos.x < B.x) || (mousePos.x > B.x && mousePos.x < A.x)||(abs(dx)<minDiff);
+    bool isWithinYbounds = (mousePos.y > A.y && mousePos.y < B.y) || (mousePos.y > B.y && mousePos.y < A.y)||(abs(dy)<minDiff);
+
+
+ 
 
     double distance = fabs(dy * mousePos.x - dx * mousePos.y + B.x * A.y - B.y * A.x) / sqrt(pow(dy, 2) + pow(dx, 2));
-
-    // check if withing the tolerance  and mouse within the segment , either A or B can be greater w.r.t X-axis
-    return distance <= tolerance && ((mousePos.x > A.x && mousePos.x < B.x) || (mousePos.x > B.x && mousePos.x < A.x));
+    return distance <= tolerance && isWithinXbounds &&isWithinYbounds;
 }
 
 bool ChipArea::isHoveringWire(CordDouble MousePos, Wire *wire, double tolerance)
