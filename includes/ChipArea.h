@@ -93,6 +93,7 @@ public:
     void updateClickedWires(CordDouble mousePos);
 
     bool shouldQueueDraw = false;
+    bool isClicked = false;
 
     void onMyLeftClick(int n_press, double x, double y);
     void onMyDeleteKeyPressed();
