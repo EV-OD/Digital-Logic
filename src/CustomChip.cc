@@ -20,7 +20,8 @@ void ChipArea::save_circuit(std::string &name)
     std::fstream file;
     std::string ext = ".chip";
     name += ext;
-    file.open(name, std::ios::in | std::ios::binary | std::ios::trunc | std::ios::out);
+    std::string fullPath = currentDirName + "/" + name;
+    file.open(fullPath, std::ios::in | std::ios::binary | std::ios::trunc | std::ios::out);
     int no_of_global_input_pin = globalInputPins->size();
     int no_of_global_output_pin = globalOutputPins->size();
     file << "# Global Input -> " << no_of_global_input_pin << std::endl;
@@ -178,7 +179,8 @@ void ChipArea::save_circuit(std::string &name)
 Chip *ChipArea::load_chip(std::string &name)
 {
     Parse parser;
-    parser.parseFile(name);
+    std::string fullPath = currentDirName + "/" + name;
+    parser.parseFile(fullPath);
     int global_input_pins_count = parser.globalInputCount;
     int global_output_pins_count = parser.globalOutputCount;
     std::vector<Chip *> *Ichips = new std::vector<Chip *>();
@@ -419,9 +421,13 @@ void ChipArea::load_each_chip(std::string &filename)
 
 void ChipArea::load_all_chips()
 {
-    chipFiles = getFilesWithExtension(".", ".chip");
+    std::string currentDir = std::filesystem::current_path().generic_string();
+    currentDir += "/" + currentDirName;
+    chipFiles = getFilesWithExtension(currentDir, ".chip");
+    std::cout << "Current directory: " << currentDir << std::endl;
     for (int i = 0; i < chipFiles.size(); i++)
     {
+        std::cout << chipFiles[i] << std::endl;
         load_each_chip(chipFiles[i]);
     }
 }

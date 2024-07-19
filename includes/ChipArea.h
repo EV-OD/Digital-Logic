@@ -47,6 +47,7 @@ public:
     ScreenStack *stack;
     Gtk::DrawingArea *canvas;
     CordDouble mousePos;
+    std::string currentDirName = std::string("circuit");
 
     Gtk::Overlay *overlay;
     Dialog *save_popup = nullptr;
@@ -115,6 +116,7 @@ public:
 
     void clear_actions();
     void call_save_popup();
+    void clear_all();
 };
 
 class ChipSelectorUI : public Gtk::Box

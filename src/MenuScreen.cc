@@ -2,6 +2,7 @@
 #include "MenuScreen.h"
 #include "ScreenStack.h"
 #include <iostream>
+#include <filesystem>
 
 
 void print_hello()
@@ -13,8 +14,12 @@ void print_hello()
 MenuScreen::MenuScreen(ScreenStack *stack)
 {
   this->stack = stack;
+  overlay = Gtk::manage(new Gtk::Overlay());
+  this->newProjectDialog = new NewProjectD();
+  this->newProjectDialog->saveBtn->signal_clicked().connect(sigc::mem_fun(*this, &MenuScreen::new_chip));
 
-  std::cout << "[initial stack]" << this->stack << std::endl;
+  this->openProjectDialog = new OpenProjectDialog();
+  this->openProjectDialog->saveBtn->signal_clicked().connect(sigc::mem_fun(*this, &MenuScreen::open_chip));
   // wrapper
   Gtk::Box *box = Gtk::manage(new Gtk::Box(Gtk::Orientation::VERTICAL, 1));
   box->set_css_classes({"menu-area"});
@@ -60,13 +65,13 @@ MenuScreen::MenuScreen(ScreenStack *stack)
   Gtk::Button *button1 = Gtk::manage(new Gtk::Button("New Project"));
   button1->set_css_classes({"menu-button"});
   std::cout << "Value of this: " << this << std::endl;
-  button1->signal_clicked().connect(sigc::mem_fun(*this, &MenuScreen::new_chip));
+  button1->signal_clicked().connect(sigc::mem_fun(*this, &MenuScreen::open_new_project_dialog));
 
 
 
   Gtk::Button *button2 = Gtk::manage(new Gtk::Button("Open Project"));
   button2->set_css_classes({"menu-button"});
-  // button2->signal_clicked().connect(sigc::mem_fun(*this, &MenuScreen::open_chip));
+  button2->signal_clicked().connect(sigc::mem_fun(*this, &MenuScreen::open_open_project_dialog));
 
   Gtk::Button *button3 = Gtk::manage(new Gtk::Button("Exit"));
   button3->set_css_classes({"menu-button"});
@@ -80,18 +85,65 @@ MenuScreen::MenuScreen(ScreenStack *stack)
   menuBox->set_halign(Gtk::Align::CENTER);
 
   box->append(*menuBox);
-  set_child(*box);
+  overlay->set_child(*box);
+  overlay->add_overlay(*newProjectDialog);
+  overlay->add_overlay(*openProjectDialog);
+  set_child(*overlay);
 }
+
 
 void MenuScreen::new_chip()
 {
+  this->stack->chipArea->clear_all();
+  if(stack->chipArea->currentDirName == ""){
+    newProjectDialog->error->set_visible(true);
+    return;
+  }
+  stack->chipArea->currentDirName = newProjectDialog->entry->get_text();
+  // find if folder exists
+  std::string path = "."; // current directory
+  std::string dirName = stack->chipArea->currentDirName;
+  std::string fullPath = path + "/" + dirName;
+  std::filesystem ::path folder(fullPath);
+  if(std::filesystem::exists(folder)){
+    newProjectDialog->showError("Project already exists");
+    return;
+  }
+  // create new folder
+  std::filesystem::create_directory(folder);
+  newProjectDialog->hideUI();
   stack->show_chip_area();
+  stack->chipArea->load_all_chips();
+}
 
+void MenuScreen::open_new_project_dialog(){
+  newProjectDialog->showUI();
+}
+
+void MenuScreen::close_new_project_dialog(){
+  newProjectDialog->hideUI();
+}
+
+void MenuScreen::open_open_project_dialog(){
+  openProjectDialog->showUI();
+}
+
+void MenuScreen::close_open_project_dialog(){
+  openProjectDialog->hideUI();
 }
 
 void MenuScreen::open_chip()
 {
-  stack->show_dialog();
+  this->stack->chipArea->clear_all();
+  auto selected_pos = this->openProjectDialog->selection_model->get_selected();
+  //GTK_INVALID_LIST_POSITION 
+  if(selected_pos != GTK_INVALID_LIST_POSITION){
+    auto selected = this->openProjectDialog->m_StringList->get_string(selected_pos);
+    stack->chipArea->currentDirName = selected;
+    stack->show_chip_area();
+    stack->chipArea->load_all_chips();
+    openProjectDialog->hideUI();
+  }
 }
 
 

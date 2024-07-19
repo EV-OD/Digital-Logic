@@ -301,7 +301,6 @@ ChipArea::ChipArea(ScreenStack *stack)
 
     wrapper->append(*container);
     overlay->set_child(*wrapper);
-    load_all_chips();
     set_child(*overlay);
 }
 
@@ -547,6 +546,31 @@ bool ChipArea::on_my_key_pressed(guint keyval, guint /*keycode*/, Gdk::ModifierT
     return false; // Event has not been handled
 }
 
+void ChipArea::clear_all(){
+    for (int i = 0; i < chips->size(); i++)
+    {
+        delete chips->at(i);
+    }
+    chips->clear();
+    for (int i = 0; i < globalInputPins->size(); i++)
+    {
+        delete globalInputPins->at(i);
+    }
+    globalInputPins->clear();
+    for (int i = 0; i < globalOutputPins->size(); i++)
+    {
+        delete globalOutputPins->at(i);
+    }
+    globalOutputPins->clear();
+    // delete all (except first three ) buttons of chipSelectorUI
+    std::vector<Gtk::Widget *> childs = chipSelector->get_children();
+    for (int i = 3; i < childs.size(); i++)
+    {
+        chipSelector->remove(*childs[i]);
+    }
+    clear_actions();
+
+}
 void ChipArea::onMyLeftClick(int n_press, double x, double y)
 {
     // if a wire is dragged
@@ -2032,10 +2056,15 @@ void ChipSelectorMenu::quit()
 {
     scrn_stack->stack->set_transition_type(Gtk::StackTransitionType::SLIDE_RIGHT);
     scrn_stack->show_home_menu();
+    hide();
+    visible = false;
+
 }
 void ChipSelectorMenu::save_circuit()
 {
-    Glib::OptionGroup::vecstrings chipFiles = getFilesWithExtension(".", ".chip");
+    std::string currentDir = std::filesystem::current_path().generic_string();
+    currentDir += "/" + scrn_stack->chipArea->currentDirName;
+    Glib::OptionGroup::vecstrings chipFiles = getFilesWithExtension(currentDir, ".chip");
     std::string chipName = scrn_stack->chipArea->save_popup->getEntryText();
     std::string chipFilename = chipName + ".chip";
     std::cout << chipFilename << std::endl;
