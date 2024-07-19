@@ -614,6 +614,7 @@ void ChipArea::onMyLeftClick(int n_press, double x, double y)
                 {
                     if (chips->at(i)->inputPins[j]->isInside(x - margin, y - margin))
                     {
+                        chips->at(i)->isClicked = false;
                         Bind *bind = new Bind(*chips->at(i)->inputPins[j]);
                         bind->gInput = draggedGlobalInputPin;
                         draggedGlobalInputPin->binds->push_back(bind);
@@ -672,6 +673,7 @@ void ChipArea::onMyLeftClick(int n_press, double x, double y)
                 {
                     if (chips->at(i)->inputPins[j]->isInside(x - margin, y - margin))
                     {
+                        chips->at(i)->isClicked = false;
                         draggedOutputPin->bindTo(*chips->at(i)->inputPins[j]);
                         CordDouble c1 = CordDouble{chips->at(i)->inputPins[j]->x, chips->at(i)->inputPins[j]->y};
                         draggedWire->breakPoints->push_back(c1);
@@ -702,6 +704,7 @@ void ChipArea::onMyLeftClick(int n_press, double x, double y)
             {
                 if (globalInputPins->at(i)->isInside(x - margin, y - margin))
                 {
+                    chips->at(i)->isClicked = false;
                     BindToGlobalOutPut *bind = new BindToGlobalOutPut(*draggedGlobalOutputPin);
                     bind->gInput = globalInputPins->at(i);
                     globalInputPins->at(i)->gbinds->push_back(bind);
@@ -727,6 +730,7 @@ void ChipArea::onMyLeftClick(int n_press, double x, double y)
                 {
                     if (chips->at(i)->outputPins[j]->isInside(x - margin, y - margin))
                     {
+                        chips->at(i)->isClicked = false;
                         BindToGlobalOutPut *bind = new BindToGlobalOutPut(*draggedGlobalOutputPin);
                         bind->localOutput = chips->at(i)->outputPins[j];
                         chips->at(i)->outputPins[j]->bindsToGlobalOutput->push_back(bind);
@@ -782,6 +786,7 @@ void ChipArea::onMyLeftClick(int n_press, double x, double y)
                 {
                     if (chips->at(i)->outputPins[j]->isInside(x - margin, y - margin))
                     {
+                        chips->at(i)->isClicked = false;
                         chips->at(i)->outputPins[j]->bindTo(*draggedInputPin);
                         CordDouble c1 = CordDouble{chips->at(i)->outputPins[j]->x, chips->at(i)->outputPins[j]->y};
                         draggedWire->breakPoints->push_back(c1);
@@ -834,6 +839,7 @@ void ChipArea::onMyLeftClick(int n_press, double x, double y)
 
                 if (chips->at(i)->outputPins[j]->isInside(x - margin, y - margin))
                 {
+                    chips->at(i)->isClicked = false;
                     isPinFound = true;
                     draggedOutputPin = chips->at(i)->outputPins[j];
                     draggedWire = new Wire();
@@ -851,6 +857,7 @@ void ChipArea::onMyLeftClick(int n_press, double x, double y)
                 {
                     if (chips->at(i)->inputPins[j]->isInside(x - margin, y - margin))
                     {
+                        chips->at(i)->isClicked = false;
                         isPinFound = true;
                         draggedInputPin = chips->at(i)->inputPins[j];
                         draggedWire = new Wire();
@@ -861,7 +868,7 @@ void ChipArea::onMyLeftClick(int n_press, double x, double y)
                 }
             }
 
-            // so that pin dragging of wire and chip is not simultaneous
+            // chips are selected only after no pin is selected so that pin dragging of wire and chip is not simultaneous
             if (!isPinFound)
             {
                 if (chips->at(i)->isMouseInside(x - margin, y - margin))
