@@ -198,4 +198,21 @@ border:none;
     background-color: rgb(88, 88, 88);
 }
 
+.data-table{
+    background-color: rgb(22, 22, 22);
+    padding: 0;
+
+}
+
+.dialog-list-item{
+    background-color: rgb(22, 22, 22);
+    color: rgb(193, 193, 193);
+    padding-left: 10px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+
+.dialog-list-item:hover{
+    background-color: rgb(66, 66, 66);
+}
 

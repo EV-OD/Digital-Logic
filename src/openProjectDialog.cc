@@ -92,9 +92,25 @@ void OpenProjectDialog::showUI(){
     hideError();
 }
 
+class ListItem: public Gtk::Box{
+    public:
+    ListItem(std::string name){
+        label = Gtk::make_managed<Gtk::Label>(name, Gtk::Align::START);
+        set_css_classes({"dialog-list-item"});
+        append(*label);
+    }
+    Gtk::Label *label;
+};
+
 void OpenProjectDialog::on_setup_label(const Glib::RefPtr<Gtk::ListItem>& list_item)
 {
-  list_item->set_child(*Gtk::make_managed<Gtk::Label>("", Gtk::Align::START));
+  // make box and label inside box
+
+  // list_item->set_child(*Gtk::make_managed<Gtk::Label>("", Gtk::Align::START));
+  auto box = Gtk::make_managed<ListItem>(m_StringList->get_string(list_item->get_position()));
+
+  list_item->set_child(*box);
+  
 }
 
 void OpenProjectDialog::on_bind_name(const Glib::RefPtr<Gtk::ListItem>& list_item)
@@ -102,10 +118,10 @@ void OpenProjectDialog::on_bind_name(const Glib::RefPtr<Gtk::ListItem>& list_ite
   auto pos = list_item->get_position();
   if (pos == GTK_INVALID_LIST_POSITION)
     return;
-  auto label = dynamic_cast<Gtk::Label*>(list_item->get_child());
-  if (!label)
+  auto box = dynamic_cast<ListItem*>(list_item->get_child());
+  if (!box)
     return;
-  label->set_text(m_StringList->get_string(pos));
+  box->label->set_text(m_StringList->get_string(pos));
 }
 
 void OpenProjectDialog::showError(){
