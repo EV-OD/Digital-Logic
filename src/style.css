@@ -199,8 +199,9 @@ border:none;
 }
 
 .data-table{
-    background-color: rgb(22, 22, 22);
+    background-color: rgb(35, 35, 35);
     padding: 0;
+    margin-bottom: 10px;
 
 }
 
@@ -208,11 +209,19 @@ border:none;
     background-color: rgb(22, 22, 22);
     color: rgb(193, 193, 193);
     padding-left: 10px;
-    padding-top: 5px;
-    padding-bottom: 5px;
+    padding-top: 8px;
+    padding-bottom: 8px;
 }
 
 .dialog-list-item:hover{
     background-color: rgb(66, 66, 66);
+}
+
+.dialog-list-item-label{
+    font-size: 25px;
+}
+
+.dialog-heading-label{
+    font-size: 35px;
 }
 

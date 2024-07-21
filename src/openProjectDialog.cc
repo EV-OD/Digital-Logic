@@ -15,7 +15,7 @@ OpenProjectDialog::OpenProjectDialog(){
     Gtk::Label *label = Gtk::manage(new Gtk::Label());
     label->set_text("Projects");
     label->set_halign(Gtk::Align::START);
-    label->set_css_classes({"dialog-label"});
+    label->set_css_classes({"dialog-label", "dialog-heading-label"});
 
     Gtk::Box *box = Gtk::manage(new Gtk::Box());
     box->set_css_classes({"dialog-box"});
@@ -97,6 +97,7 @@ class ListItem: public Gtk::Box{
     ListItem(std::string name){
         label = Gtk::make_managed<Gtk::Label>(name, Gtk::Align::START);
         set_css_classes({"dialog-list-item"});
+        label->set_css_classes({"dialog-list-item-label"});
         append(*label);
     }
     Gtk::Label *label;
