@@ -559,7 +559,7 @@ void ChipArea::clear_all(){
     }
     globalOutputPins->clear();
     // delete all (except first three ) buttons of chipSelectorUI
-    std::vector<Gtk::Widget *> childs = chipSelector->get_children();
+    std::vector<Gtk::Widget *> childs = dynamic_cast<Gtk::Widget*>(chipSelector)->get_children();
     for (int i = 3; i < childs.size(); i++)
     {
         chipSelector->remove(*childs[i]);
