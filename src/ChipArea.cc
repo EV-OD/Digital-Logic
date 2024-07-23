@@ -13,18 +13,22 @@
 #include <algorithm>
 #include <vector>
 
-bool isValidFilename(const std::string& filename) {
+bool isValidFilename(const std::string &filename)
+{
     // List of invalid characters for Windows filenames
     const std::string invalidChars = "<>:\"/\\|?*";
 
     // Check for leading spaces
-    if (!filename.empty() && filename.front() == ' ') {
+    if (!filename.empty() && filename.front() == ' ')
+    {
         return false;
     }
 
     // Check for invalid characters
-    for (char c : invalidChars) {
-        if (filename.find(c) != std::string::npos) {
+    for (char c : invalidChars)
+    {
+        if (filename.find(c) != std::string::npos)
+        {
             return false;
         }
     }
@@ -33,35 +37,37 @@ bool isValidFilename(const std::string& filename) {
     const std::vector<std::string> reservedNames = {
         "CON", "PRN", "AUX", "NUL",
         "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
-        "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9"
-    };
-    
+        "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9"};
+
     std::string upperFilename = filename;
     std::transform(upperFilename.begin(), upperFilename.end(), upperFilename.begin(), ::toupper);
 
-    if (std::find(reservedNames.begin(), reservedNames.end(), upperFilename) != reservedNames.end()) {
+    if (std::find(reservedNames.begin(), reservedNames.end(), upperFilename) != reservedNames.end())
+    {
         return false;
     }
 
     // Check for trailing spaces or periods
-    if (filename.back() == ' ' || filename.back() == '.') {
+    if (filename.back() == ' ' || filename.back() == '.')
+    {
         return false;
     }
 
     // Check for empty filename
-    if (filename.empty()) {
+    if (filename.empty())
+    {
         return false;
     }
 
     // Optionally check the length of the filename (e.g., on Windows, the max path length is 260 characters)
     const size_t maxPathLength = 260;
-    if (filename.length() > maxPathLength) {
+    if (filename.length() > maxPathLength)
+    {
         return false;
     }
 
     return true;
 }
-
 
 namespace fs = std::filesystem;
 // Function to get filenames with a specific extension in a directory
@@ -494,6 +500,19 @@ void ChipArea::updateClickedWires(CordDouble mousePos)
     }
 }
 
+void ChipArea::updateLoadingChips(CordDouble mousePos)
+{
+    if (chips->size() > 0)
+    {
+        if (chips->at(chips->size() - 1)->isLoadedtoCircuit == false)
+        {
+            chips->at(chips->size() - 1)->structure->boundingBox->x = mousePos.x - chips->at(chips->size() - 1)->structure->boundingBox->width / 2;
+            chips->at(chips->size() - 1)->structure->boundingBox->y = mousePos.y - chips->at(chips->size() - 1)->structure->boundingBox->height / 2;
+            shouldQueueDraw = true;
+        }
+    }
+}
+
 void ChipArea::on_my_motion(double x, double y)
 {
     mousePos = CordDouble{x - margin, y - margin};
@@ -501,6 +520,11 @@ void ChipArea::on_my_motion(double x, double y)
 
     updateHoveringChipsPins(mousePos);
     updateHoveringWires(mousePos);
+
+    if (isLoadingChip)
+    {
+        updateLoadingChips(mousePos);
+    }
 
     if (draggedWire != nullptr)
     {
@@ -542,7 +566,8 @@ bool ChipArea::on_my_key_pressed(guint keyval, guint /*keycode*/, Gdk::ModifierT
     return false; // Event has not been handled
 }
 
-void ChipArea::clear_all(){
+void ChipArea::clear_all()
+{
     for (int i = 0; i < chips->size(); i++)
     {
         delete chips->at(i);
@@ -559,17 +584,15 @@ void ChipArea::clear_all(){
     }
     globalOutputPins->clear();
     // delete all (except first three ) buttons of chipSelectorUI
-    std::vector<Gtk::Widget *> childs = dynamic_cast<Gtk::Widget*>(chipSelector)->get_children();
+    std::vector<Gtk::Widget *> childs = dynamic_cast<Gtk::Widget *>(chipSelector)->get_children();
     for (int i = 3; i < childs.size(); i++)
     {
         chipSelector->remove(*childs[i]);
     }
     clear_actions();
-
 }
 void ChipArea::onMyLeftClick(int n_press, double x, double y)
 {
-    std::cout << "left click registered" << std::endl;
 
     // if a wire is dragged
     if (draggedGlobalInputPin != nullptr)
@@ -833,6 +856,16 @@ void ChipArea::onMyLeftClick(int n_press, double x, double y)
         for (int i = 0; i < chips->size(); i++)
         {
 
+            // loading chips when clicked
+            if (!chips->at(i)->isLoadedtoCircuit)
+            {
+                int new_x = mousePos.x - chips->at(i)->structure->boundingBox->width / 2;
+                int new_y = mousePos.y - chips->at(i)->structure->boundingBox->height / 2;
+                chips->at(i)->structure->setLoc(new_x, new_y);
+            }
+
+            chips->at(i)->isLoadedtoCircuit = true;
+
             // check output pins
             for (int j = 0; j < chips->at(i)->outputPins.size(); j++)
             {
@@ -1049,7 +1082,6 @@ void ChipArea::onMyDeleteKeyPressed()
 
 void ChipArea::on_my_drag_begin(double start_x, double start_y)
 {
-    std::cout << "drag begins" << std::endl;
     onMyLeftClick(1, start_x, start_y);
     for (int i = 0; i < chips->size(); i++)
     {
@@ -1120,6 +1152,7 @@ void ChipArea::on_my_drag_end(double offset_x, double offset_y)
 
 void ChipArea::createAndChip(int index, int posX, int posY)
 {
+    isLoadingChip = true;
     ChipStructure *structureAND = new ChipStructure(new ChipBoundingBox{100, 100, posX, posY});
     std::vector<InputPin *> inputPins;
     std::vector<OutputPin *> outputPins;
@@ -1133,12 +1166,15 @@ void ChipArea::createAndChip(int index, int posX, int posY)
 
     Chip *chipAND = new Chip(structureAND, inputPins, outputPins, "AND");
     chipAND->setChipType(ChipType::AND);
+    // chipAND->isLoadedtoCircuit = true;
+
     addChip(chipAND);
     canvas->queue_draw();
 }
 
 void ChipArea::createNotChip(int index, int posX, int posY)
 {
+    isLoadingChip = true;
     ChipStructure *structureNOT = new ChipStructure(new ChipBoundingBox{100, 100, posX, posY});
 
     InputPin *inputPinNOT_A = new InputPin("A", 0);
@@ -1152,6 +1188,7 @@ void ChipArea::createNotChip(int index, int posX, int posY)
 
     Chip *chiNOT = new Chip(structureNOT, inputPins, outputPins, "NOT");
     chiNOT->setChipType(ChipType::NOT);
+    // chiNOT->isLoadedtoCircuit = true;
     addChip(chiNOT);
     canvas->queue_draw();
 }
@@ -1368,7 +1405,7 @@ ChipSelectorUI::ChipSelectorUI(ChipArea *area, ChipSelectorMenu *menu)
     and_btn->set_label("AND");
     and_btn->set_size_request(80, 50);
     and_btn->set_css_classes({"chip-btn"});
-    and_btn->signal_clicked().connect(sigc::bind(sigc::mem_fun(*area, ChipArea::createAndChip), 0, 50, (area->height) - 300));
+    and_btn->signal_clicked().connect(sigc::bind(sigc::mem_fun(*area, ChipArea::createAndChip), 0, 50, (area->height) - 270));
     append(*and_btn);
 
     // not gate
@@ -1377,7 +1414,7 @@ ChipSelectorUI::ChipSelectorUI(ChipArea *area, ChipSelectorMenu *menu)
     not_btn->set_label("NOT");
     not_btn->set_size_request(80, 50);
     not_btn->set_css_classes({"chip-btn"});
-    not_btn->signal_clicked().connect(sigc::bind(sigc::mem_fun(*area, ChipArea::createNotChip), 0, 250, (area->height) - 300));
+    not_btn->signal_clicked().connect(sigc::bind(sigc::mem_fun(*area, ChipArea::createNotChip), 0, 150, (area->height) - 250));
     append(*not_btn);
 
     // for (int i = 0; i < 5; i++)
@@ -2075,7 +2112,6 @@ void ChipSelectorMenu::quit()
     scrn_stack->show_home_menu();
     hide();
     visible = false;
-
 }
 void ChipSelectorMenu::save_circuit()
 {
@@ -2099,7 +2135,7 @@ void ChipSelectorMenu::save_circuit()
     {
         scrn_stack->chipArea->save_popup->showError();
     }
-    else if(!isValidFilename(chipName))
+    else if (!isValidFilename(chipName))
     {
         scrn_stack->chipArea->save_popup->showError("Invalid Chip Name");
     }

@@ -88,13 +88,15 @@ public:
 
     bool isHoveringLine(CordDouble MousePos, CordDouble A, CordDouble B, double tolerance);
     bool isHoveringWire(CordDouble MousePos, Wire *wire, double tolerance);
+    bool shouldQueueDraw = false;
+    bool isClicked = false;
+    bool isLoadingChip = false;
 
     void updateHoveringChipsPins(CordDouble mousePos);
     void updateHoveringWires(CordDouble mousePos);
     void updateClickedWires(CordDouble mousePos);
+    void updateLoadingChips(CordDouble mousePos);
 
-    bool shouldQueueDraw = false;
-    bool isClicked = false;
 
     void onMyLeftClick(int n_press, double x, double y);
     void onMyDeleteKeyPressed();
@@ -302,6 +304,7 @@ public:
     bool isHovered = false;
     bool isClicked = false;
     bool isDragging = false;
+    bool isLoadedtoCircuit = false;
     ChipType type;
     void addInputPin(InputPin *inputPin);
     void addOutputPin(OutputPin *outputPin);

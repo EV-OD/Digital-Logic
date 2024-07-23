@@ -399,6 +399,7 @@ Chip *ChipArea::load_chip(std::string &name)
 
 void ChipArea::load_chip_to_circuit(std::string &name)
 {
+    isLoadingChip = true;
     // console
     Chip *chip = load_chip(name);
     if(chip == nullptr)
@@ -406,6 +407,10 @@ void ChipArea::load_chip_to_circuit(std::string &name)
         std::cerr << "Chip is null" << std::endl;
         return;
     }
+    int new_x =  mousePos.x - chip->structure->boundingBox->width/2-30;
+    int new_y = height - chip->structure->boundingBox->height-100;
+
+    chip->structure->setLoc(new_x, new_y);
     addChip(chip);
     canvas->queue_draw();
 }
