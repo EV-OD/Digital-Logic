@@ -120,6 +120,7 @@ public:
     void clear_actions();
     void call_save_popup();
     void clear_all();
+    void clear_screen();
 };
 
 class ChipSelectorUI : public Gtk::Box
@@ -364,6 +365,7 @@ public:
     void quit();
     void save_circuit();
     void show_save_popup();
+    void clear_screen();
 };
 
 class PinAction{

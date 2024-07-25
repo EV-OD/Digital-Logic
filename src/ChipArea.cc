@@ -591,6 +591,26 @@ void ChipArea::clear_all()
     }
     clear_actions();
 }
+
+void ChipArea::clear_screen(){
+        for (int i = 0; i < chips->size(); i++)
+    {
+        delete chips->at(i);
+    }
+    chips->clear();
+    for (int i = 0; i < globalInputPins->size(); i++)
+    {
+        delete globalInputPins->at(i);
+    }
+    globalInputPins->clear();
+    for (int i = 0; i < globalOutputPins->size(); i++)
+    {
+        delete globalOutputPins->at(i);
+    }
+    globalOutputPins->clear();
+    clear_actions();
+}
+
 void ChipArea::onMyLeftClick(int n_press, double x, double y)
 {
 
@@ -2068,7 +2088,8 @@ ChipSelectorMenu::ChipSelectorMenu(int width, int height, ScreenStack *scrn_stac
     Gtk::Button *library = Gtk::manage(new Gtk::Button());
     library->set_size_request(300, 50);
     library->set_css_classes({"action-menu-btn"});
-    library->set_label("LIBRARY");
+    library->set_label("CLEAR");
+    library->signal_clicked().connect(sigc::mem_fun(*this, ChipSelectorMenu::clear_screen));
 
     Gtk::Button *save = Gtk::manage(new Gtk::Button());
     save->set_css_classes({"action-menu-btn"});
@@ -2087,6 +2108,9 @@ ChipSelectorMenu::ChipSelectorMenu(int width, int height, ScreenStack *scrn_stac
     this->m_GestureClick->set_propagation_phase(Gtk::PropagationPhase::TARGET);
     this->m_GestureClick->signal_pressed().connect(sigc::mem_fun(*this, ChipSelectorMenu::hideMenu));
     add_controller(this->m_GestureClick);
+}
+void ChipSelectorMenu::clear_screen(){
+    scrn_stack->chipArea->clear_screen();
 }
 
 void ChipSelectorMenu::hideMenu(int, int, int)
