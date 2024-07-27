@@ -25,6 +25,20 @@ MyWindow::MyWindow()
   // after some delay show the menu
   screenStack->stack->set_transition_type(Gtk::StackTransitionType::CROSSFADE);
   Glib::signal_timeout().connect(sigc::mem_fun(*this, &MyWindow::on_timeout), 1000);
+  set_icon_name("./assets/logo.png");
+
+  auto icon_theme = Gtk::IconTheme::create();
+  // icon path is ./assets/logo.png
+  // icon_theme->add_resource_path("/assets");
+  icon_theme->add_search_path("./assets");
+  if(icon_theme->has_icon("logo")){
+    std::cout << "Icon found" << std::endl;
+    set_default_icon_name("logo");
+    set_icon_name("logo");
+  }else{
+    std::cout << "Icon not found" << std::endl;
+  }
+
 }
 
 bool MyWindow::on_timeout()

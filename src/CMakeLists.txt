@@ -1,7 +1,8 @@
 file(GLOB SRC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.cc)
 list(REMOVE_ITEM SRC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
 
-add_executable(program main.cpp ${SRC_FILES})
+add_executable(program WIN32 main.cpp ${SRC_FILES})  # Add WIN32 here
+
 
 # Create a custom target to copy style.css every time
 add_custom_target(copy_style_css ALL
