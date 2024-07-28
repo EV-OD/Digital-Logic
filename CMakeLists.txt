@@ -14,6 +14,3 @@ link_directories(${GTKMM_LIBRARY_DIRS})
 # Add additional include and link directories here
 include_directories(includes)
 add_subdirectory(src)
-
-
- 
