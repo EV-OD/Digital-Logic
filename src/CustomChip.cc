@@ -407,12 +407,17 @@ void ChipArea::load_chip_to_circuit(std::string &name)
         std::cerr << "Chip is null" << std::endl;
         return;
     }
-    int new_x =  mousePos.x - chip->structure->boundingBox->width/2-30;
-    int new_y = height - chip->structure->boundingBox->height-100;
 
-    chip->structure->setLoc(new_x, new_y);
     addChip(chip);
     canvas->queue_draw();
+
+    int new_x =  mousePos.x - chip->structure->boundingBox->width/2-30; //30 is margin
+    int new_y = canvas->get_height()/2;
+    chip->structure->setLoc(new_x, new_y);
+
+    // int new_x =  mousePos.x - chip->structure->boundingBox->width/2-30; //30 is margin
+    // int new_y = canvas->get_height() - chip->structure->boundingBox->height;
+    // chip->structure->boundingBox->y = get_height() - chip->structure->boundingBox->height;
 }
 
 void ChipArea::load_each_chip(std::string &filename)
