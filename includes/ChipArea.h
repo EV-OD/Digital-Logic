@@ -163,7 +163,6 @@ public:
     }
     ~Wire()
     {
-        std::cout<<"wire destructor called"<<std::endl;
         delete breakPoints;
     }
 };
