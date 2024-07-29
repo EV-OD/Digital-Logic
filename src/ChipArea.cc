@@ -293,7 +293,7 @@ ChipArea::ChipArea(ScreenStack *stack)
     globalOutputPins->push_back(globalOutputPin);
 
     // chipSelector UI
-    ActionMenu = new ChipSelectorMenu(width, height, stack);
+    ActionMenu = new ChipSelectorMenu(width, height, stack); // visible after menu is pressed
     chipSelector = Gtk::manage(new ChipSelectorUI(this, ActionMenu));
 
     ActionMenu->hide();
@@ -308,6 +308,15 @@ ChipArea::ChipArea(ScreenStack *stack)
     wrapper->append(*container);
     overlay->set_child(*wrapper);
     set_child(*overlay);
+}
+
+bool ChipArea::isHoveringCanvas(CordDouble mousePos)
+{
+    if ((mousePos.x > 0 && mousePos.x < canvas->get_width()) && (mousePos.y > 0 && mousePos.y < canvas->get_height()))
+    {
+        return true;
+    }
+    return false;
 }
 
 bool ChipArea::isHoveringLine(CordDouble mousePos, CordDouble A, CordDouble B, double tolerance)
@@ -416,19 +425,31 @@ void ChipArea::updateHoveringWires(CordDouble mousePos)
                     }
                 }
             }
+        }
+    }
 
-            // wires from global input pins
-            for (int pin = 0; pin < globalInputPins->size(); pin++)
+    // wires from global input pins
+    for (int pin = 0; pin < globalInputPins->size(); pin++)
+    {
+        for (int bind = 0; bind < globalInputPins->at(pin)->binds->size(); bind++)
+        {
+            if (globalInputPins->at(pin)->binds->at(bind)->isHovered != isHoveringWire(mousePos, globalInputPins->at(pin)->binds->at(bind)->wire, tolerance))
             {
-                for (int bind = 0; bind < globalInputPins->at(pin)->binds->size(); bind++)
-                {
-                    if (globalInputPins->at(pin)->binds->at(bind)->isHovered != isHoveringWire(mousePos, globalInputPins->at(pin)->binds->at(bind)->wire, tolerance))
-                    {
-                        globalInputPins->at(pin)->binds->at(bind)->isHovered = isHoveringWire(mousePos, globalInputPins->at(pin)->binds->at(bind)->wire, tolerance);
-                        shouldQueueDraw = true;
-                        break;
-                    }
-                }
+                globalInputPins->at(pin)->binds->at(bind)->isHovered = isHoveringWire(mousePos, globalInputPins->at(pin)->binds->at(bind)->wire, tolerance);
+                shouldQueueDraw = true;
+                break;
+            }
+        }
+
+        // from global inputs to global outputs
+        for (int bind = 0; bind < globalInputPins->at(pin)->gbinds->size(); bind++)
+        {
+            // if (isHoveringWire(mousePos, globalInputPins->at(pin)->gbinds->at(bind)->wire, tolerance))
+            if (globalInputPins->at(pin)->gbinds->at(bind)->isHovered != isHoveringWire(mousePos, globalInputPins->at(pin)->gbinds->at(bind)->wire, tolerance))
+            {
+                globalInputPins->at(pin)->gbinds->at(bind)->isHovered = isHoveringWire(mousePos, globalInputPins->at(pin)->gbinds->at(bind)->wire, tolerance);
+                shouldQueueDraw = true;
+                break;
             }
         }
     }
@@ -479,22 +500,36 @@ void ChipArea::updateClickedWires(CordDouble mousePos)
                     }
                 }
             }
+        }
+    }
 
-            // wires from globalInputs
-            for (int pin = 0; pin < globalInputPins->size(); pin++)
+    // wires from globalInputs
+    for (int pin = 0; pin < globalInputPins->size(); pin++)
+    {
+        // globalInputs to chip inputs
+        for (int bind = 0; bind < globalInputPins->at(pin)->binds->size(); bind++)
+        {
+            if (globalInputPins->at(pin)->binds->at(bind)->isHovered)
             {
-                for (int bind = 0; bind < globalInputPins->at(pin)->binds->size(); bind++)
-                {
-                    if (globalInputPins->at(pin)->binds->at(bind)->isHovered)
-                    {
 
-                        globalInputPins->at(pin)->binds->at(bind)->isClicked = true;
-                    }
-                    else
-                    {
-                        globalInputPins->at(pin)->binds->at(bind)->isClicked = false;
-                    }
-                }
+                globalInputPins->at(pin)->binds->at(bind)->isClicked = true;
+            }
+            else
+            {
+                globalInputPins->at(pin)->binds->at(bind)->isClicked = false;
+            }
+        }
+
+        // globalInputs to globalOutputs
+        for (int bind = 0; bind < globalInputPins->at(pin)->gbinds->size(); bind++)
+        {
+            if (globalInputPins->at(pin)->gbinds->at(bind)->isHovered)
+            {
+                globalInputPins->at(pin)->gbinds->at(bind)->isClicked = true;
+            }
+            else
+            {
+                globalInputPins->at(pin)->gbinds->at(bind)->isClicked = false;
             }
         }
     }
@@ -502,12 +537,21 @@ void ChipArea::updateClickedWires(CordDouble mousePos)
 
 void ChipArea::updateLoadingChips(CordDouble mousePos)
 {
+
     if (chips->size() > 0)
     {
         if (chips->at(chips->size() - 1)->isLoadedtoCircuit == false)
         {
             chips->at(chips->size() - 1)->structure->boundingBox->x = mousePos.x - chips->at(chips->size() - 1)->structure->boundingBox->width / 2;
-            chips->at(chips->size() - 1)->structure->boundingBox->y = mousePos.y - chips->at(chips->size() - 1)->structure->boundingBox->height / 2;
+
+            if (mousePos.y + chips->at(chips->size() - 1)->structure->boundingBox->height / 2 < canvas->get_height())
+            {
+                chips->at(chips->size() - 1)->structure->boundingBox->y = mousePos.y - chips->at(chips->size() - 1)->structure->boundingBox->height / 2;
+            }
+            else
+            {
+                chips->at(chips->size() - 1)->structure->boundingBox->y = canvas->get_height() - chips->at(chips->size() - 1)->structure->boundingBox->height;
+            }
             shouldQueueDraw = true;
         }
     }
@@ -536,6 +580,7 @@ void ChipArea::on_my_motion(double x, double y)
         canvas->queue_draw();
     }
 }
+
 void ChipArea::clear_actions()
 {
     draggedGlobalInputPin = nullptr;
@@ -591,26 +636,6 @@ void ChipArea::clear_all()
     }
     clear_actions();
 }
-
-void ChipArea::clear_screen(){
-        for (int i = 0; i < chips->size(); i++)
-    {
-        delete chips->at(i);
-    }
-    chips->clear();
-    for (int i = 0; i < globalInputPins->size(); i++)
-    {
-        delete globalInputPins->at(i);
-    }
-    globalInputPins->clear();
-    for (int i = 0; i < globalOutputPins->size(); i++)
-    {
-        delete globalOutputPins->at(i);
-    }
-    globalOutputPins->clear();
-    clear_actions();
-}
-
 void ChipArea::onMyLeftClick(int n_press, double x, double y)
 {
 
@@ -879,12 +904,22 @@ void ChipArea::onMyLeftClick(int n_press, double x, double y)
             // loading chips when clicked
             if (!chips->at(i)->isLoadedtoCircuit)
             {
-                int new_x = mousePos.x - chips->at(i)->structure->boundingBox->width / 2;
-                int new_y = mousePos.y - chips->at(i)->structure->boundingBox->height / 2;
-                chips->at(i)->structure->setLoc(new_x, new_y);
-            }
+                int new_x, new_y;
 
-            chips->at(i)->isLoadedtoCircuit = true;
+                new_x = mousePos.x - chips->at(i)->structure->boundingBox->width / 2;
+
+                if (mousePos.y + chips->at(chips->size() - 1)->structure->boundingBox->height / 2 < canvas->get_height())
+                {
+                    new_y = mousePos.y - chips->at(i)->structure->boundingBox->height / 2;
+                }
+                else
+                {
+                    new_y = canvas->get_height() - chips->at(i)->structure->boundingBox->height;
+                }
+
+                chips->at(i)->structure->setLoc(new_x, new_y);
+                chips->at(i)->isLoadedtoCircuit = true;
+            }
 
             // check output pins
             for (int j = 0; j < chips->at(i)->outputPins.size(); j++)
@@ -1076,25 +1111,42 @@ void ChipArea::onMyDeleteKeyPressed()
                     }
                 }
             }
+        }
+    }
 
-            // wires from globalInputs
-            for (int pin = 0; pin < globalInputPins->size(); pin++)
+    // wires from globalInputs
+    for (int pin = 0; pin < globalInputPins->size(); pin++)
+    {
+        for (int bind = 0; bind < globalInputPins->at(pin)->binds->size(); bind++)
+        {
+            if (globalInputPins->at(pin)->binds->at(bind)->isClicked)
             {
-                for (int bind = 0; bind < globalInputPins->at(pin)->binds->size(); bind++)
-                {
-                    if (globalInputPins->at(pin)->binds->at(bind)->isClicked)
-                    {
-                        globalInputPins->at(pin)->binds->at(bind)->input.bind = nullptr;
-                        delete globalInputPins->at(pin)->binds->at(bind);
-                        auto it = globalInputPins->at(pin)->binds->begin() + bind;
-                        globalInputPins->at(pin)->binds->erase(it);
-                        canvas->queue_draw();
-                        return;
-                    }
-                    else
-                    {
-                    }
-                }
+                globalInputPins->at(pin)->binds->at(bind)->input.bind = nullptr;
+                delete globalInputPins->at(pin)->binds->at(bind);
+                auto it = globalInputPins->at(pin)->binds->begin() + bind;
+                globalInputPins->at(pin)->binds->erase(it);
+                canvas->queue_draw();
+                return;
+            }
+            else
+            {
+            }
+        }
+
+        for (int bind = 0; bind < globalInputPins->at(pin)->gbinds->size(); bind++)
+        {
+            if (globalInputPins->at(pin)->gbinds->at(bind)->isClicked)
+            {
+                globalInputPins->at(pin)->gbinds->at(bind)->output.bindToGlobalOutput = nullptr;
+                delete globalInputPins->at(pin)->gbinds->at(bind);
+                auto it = globalInputPins->at(pin)->gbinds->begin() + bind;
+                globalInputPins->at(pin)->gbinds->erase(it);
+
+                canvas->queue_draw();
+                return;
+            }
+            else
+            {
             }
         }
     }
@@ -1377,13 +1429,25 @@ void ChipArea::draw_on_canvas(const Cairo::RefPtr<Cairo::Context> &cr,
 
             draw_wire_between(globalInputPins->at(i)->binds->at(j), cr);
         }
-    }
 
-    // draw line between globalInputPin and global output pins
-    for (int i = 0; i < globalInputPins->size(); i++)
-    {
         for (int j = 0; j < globalInputPins->at(i)->gbinds->size(); j++)
         {
+            if (globalInputPins->at(i)->gbinds->at(j)->isClicked)
+            {
+                cr->set_source_rgb(255.0 / 255.0, 0, 0);
+                cr->set_line_width(8);
+                draw_wire_between(globalInputPins->at(i)->gbinds->at(j), cr);
+            }
+
+            cr->set_line_width(4);
+            if (globalInputPins->at(i)->gbinds->at(j)->isHovered)
+            {
+                cr->set_line_width(6);
+            }
+            else
+            {
+            }
+
             if (globalInputPins->at(i)->state == 1)
             {
                 cr->set_source_rgb(255 / 255.0, 255 / 255.0, 255 / 255.0);
@@ -1392,8 +1456,6 @@ void ChipArea::draw_on_canvas(const Cairo::RefPtr<Cairo::Context> &cr,
             {
                 cr->set_source_rgb(20 / 255.0, 20 / 255.0, 20 / 255.0);
             }
-            cr->set_line_width(4);
-
             draw_wire_between(globalInputPins->at(i)->gbinds->at(j), cr);
         }
     }
@@ -1452,7 +1514,7 @@ void ChipSelectorUI::on_chip_selected(int index)
     selected_chip = index;
 }
 
-BindToGlobalOutPut::BindToGlobalOutPut(GlobalOutputPin &output) : output(output){};
+BindToGlobalOutPut::BindToGlobalOutPut(GlobalOutputPin &output) : output(output) {};
 
 void Bind::printConnection()
 {
@@ -2088,8 +2150,7 @@ ChipSelectorMenu::ChipSelectorMenu(int width, int height, ScreenStack *scrn_stac
     Gtk::Button *library = Gtk::manage(new Gtk::Button());
     library->set_size_request(300, 50);
     library->set_css_classes({"action-menu-btn"});
-    library->set_label("CLEAR");
-    library->signal_clicked().connect(sigc::mem_fun(*this, ChipSelectorMenu::clear_screen));
+    library->set_label("LIBRARY");
 
     Gtk::Button *save = Gtk::manage(new Gtk::Button());
     save->set_css_classes({"action-menu-btn"});
@@ -2108,9 +2169,6 @@ ChipSelectorMenu::ChipSelectorMenu(int width, int height, ScreenStack *scrn_stac
     this->m_GestureClick->set_propagation_phase(Gtk::PropagationPhase::TARGET);
     this->m_GestureClick->signal_pressed().connect(sigc::mem_fun(*this, ChipSelectorMenu::hideMenu));
     add_controller(this->m_GestureClick);
-}
-void ChipSelectorMenu::clear_screen(){
-    scrn_stack->chipArea->clear_screen();
 }
 
 void ChipSelectorMenu::hideMenu(int, int, int)

@@ -88,6 +88,8 @@ public:
 
     bool isHoveringLine(CordDouble MousePos, CordDouble A, CordDouble B, double tolerance);
     bool isHoveringWire(CordDouble MousePos, Wire *wire, double tolerance);
+    bool isHoveringCanvas(CordDouble mousePos);
+    
     bool shouldQueueDraw = false;
     bool isClicked = false;
     bool isLoadingChip = false;
@@ -120,7 +122,6 @@ public:
     void clear_actions();
     void call_save_popup();
     void clear_all();
-    void clear_screen();
 };
 
 class ChipSelectorUI : public Gtk::Box
@@ -162,7 +163,6 @@ public:
     }
     ~Wire()
     {
-        std::cout<<"wire destructor called"<<std::endl;
         delete breakPoints;
     }
 };
@@ -365,7 +365,6 @@ public:
     void quit();
     void save_circuit();
     void show_save_popup();
-    void clear_screen();
 };
 
 class PinAction{
