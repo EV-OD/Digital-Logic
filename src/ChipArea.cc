@@ -293,7 +293,7 @@ ChipArea::ChipArea(ScreenStack *stack)
     globalOutputPins->push_back(globalOutputPin);
 
     // chipSelector UI
-    ActionMenu = new ChipSelectorMenu(width, height, stack);
+    ActionMenu = new ChipSelectorMenu(width, height, stack); // visible after menu is pressed
     chipSelector = Gtk::manage(new ChipSelectorUI(this, ActionMenu));
 
     ActionMenu->hide();
@@ -308,6 +308,15 @@ ChipArea::ChipArea(ScreenStack *stack)
     wrapper->append(*container);
     overlay->set_child(*wrapper);
     set_child(*overlay);
+}
+
+bool ChipArea::isHoveringCanvas(CordDouble mousePos)
+{
+    if ((mousePos.x > 0 && mousePos.x < canvas->get_width()) && (mousePos.y > 0 && mousePos.y < canvas->get_height()))
+    {
+        return true;
+    }
+    return false;
 }
 
 bool ChipArea::isHoveringLine(CordDouble mousePos, CordDouble A, CordDouble B, double tolerance)
@@ -502,12 +511,21 @@ void ChipArea::updateClickedWires(CordDouble mousePos)
 
 void ChipArea::updateLoadingChips(CordDouble mousePos)
 {
+
     if (chips->size() > 0)
     {
         if (chips->at(chips->size() - 1)->isLoadedtoCircuit == false)
         {
             chips->at(chips->size() - 1)->structure->boundingBox->x = mousePos.x - chips->at(chips->size() - 1)->structure->boundingBox->width / 2;
-            chips->at(chips->size() - 1)->structure->boundingBox->y = mousePos.y - chips->at(chips->size() - 1)->structure->boundingBox->height / 2;
+
+            if (mousePos.y + chips->at(chips->size() - 1)->structure->boundingBox->height / 2 < canvas->get_height())
+            {
+                chips->at(chips->size() - 1)->structure->boundingBox->y = mousePos.y - chips->at(chips->size() - 1)->structure->boundingBox->height / 2;
+            }
+            else
+            {
+                chips->at(chips->size() - 1)->structure->boundingBox->y = canvas->get_height() - chips->at(chips->size() - 1)->structure->boundingBox->height;
+            }
             shouldQueueDraw = true;
         }
     }
@@ -536,6 +554,7 @@ void ChipArea::on_my_motion(double x, double y)
         canvas->queue_draw();
     }
 }
+
 void ChipArea::clear_actions()
 {
     draggedGlobalInputPin = nullptr;
@@ -859,12 +878,22 @@ void ChipArea::onMyLeftClick(int n_press, double x, double y)
             // loading chips when clicked
             if (!chips->at(i)->isLoadedtoCircuit)
             {
-                int new_x = mousePos.x - chips->at(i)->structure->boundingBox->width / 2;
-                int new_y = mousePos.y - chips->at(i)->structure->boundingBox->height / 2;
-                chips->at(i)->structure->setLoc(new_x, new_y);
-            }
+                int new_x, new_y;
 
-            chips->at(i)->isLoadedtoCircuit = true;
+                new_x = mousePos.x - chips->at(i)->structure->boundingBox->width / 2;
+
+                if (mousePos.y + chips->at(chips->size() - 1)->structure->boundingBox->height / 2 < canvas->get_height())
+                {
+                    new_y = mousePos.y - chips->at(i)->structure->boundingBox->height / 2;
+                }
+                else
+                {
+                    new_y = canvas->get_height() - chips->at(i)->structure->boundingBox->height;
+                }
+                
+                chips->at(i)->structure->setLoc(new_x, new_y);
+                chips->at(i)->isLoadedtoCircuit = true;
+            }
 
             // check output pins
             for (int j = 0; j < chips->at(i)->outputPins.size(); j++)
@@ -1432,7 +1461,7 @@ void ChipSelectorUI::on_chip_selected(int index)
     selected_chip = index;
 }
 
-BindToGlobalOutPut::BindToGlobalOutPut(GlobalOutputPin &output) : output(output){};
+BindToGlobalOutPut::BindToGlobalOutPut(GlobalOutputPin &output) : output(output) {};
 
 void Bind::printConnection()
 {
