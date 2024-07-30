@@ -222,14 +222,18 @@ Chip *ChipArea::load_chip(std::string &name)
         // Create input pins
         for (int j = 0; j < chipInfo.inputPin; ++j)
         {
-            InputPin *inputPin = new InputPin("I", j);
+            std::string nameI = "I";
+            nameI += std::to_string(j);
+            InputPin *inputPin = new InputPin(nameI, j);
             inputPins.push_back(inputPin);
         }
 
         // Create output pins
         for (int j = 0; j < chipInfo.outputPin; ++j)
         {
-            OutputPin *outputPin = new OutputPin("O", j);
+            std::string nameO = "O";
+            nameO += std::to_string(j);
+            OutputPin *outputPin = new OutputPin(nameO, j);
             outputPins.push_back(outputPin);
         }
 
@@ -249,7 +253,7 @@ Chip *ChipArea::load_chip(std::string &name)
         GlobalInputPin *globalInputPin = new GlobalInputPin(0, 0);
         globalInputPins->push_back(globalInputPin);
         std::string nameI = "A";
-        // nameI += std::to_string(i);
+        nameI += std::to_string(i);
         InputPin *inputPin = new InputPin(nameI, i);
         inputPins->push_back(inputPin);
     }
@@ -261,7 +265,7 @@ Chip *ChipArea::load_chip(std::string &name)
         GlobalOutputPin *globalOutputPin = new GlobalOutputPin(0, 0);
         globalOutputPins->push_back(globalOutputPin);
         std::string nameO = "Y";
-        // nameO += std::to_string(i);
+        nameO += std::to_string(i);
 
         OutputPin *outputPin = new OutputPin(nameO, i);
         outputPins->push_back(outputPin);
