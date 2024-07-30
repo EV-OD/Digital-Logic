@@ -1311,8 +1311,8 @@ void ChipArea::draw_on_canvas(const Cairo::RefPtr<Cairo::Context> &cr,
     // draw dragged wire
     if (draggedWire != nullptr)
     {
-        cr->set_source_rgb(255 / 255.0, 255 / 255.0, 255 / 255.0);
-        cr->set_line_width(4);
+        cr->set_source_rgb(255 / 255.0, 255/ 255.0, 255/ 255.0);
+        cr->set_line_width(5);
 
         if (draggedWire->breakPoints->size() != 0)
         {
@@ -1404,15 +1404,15 @@ void ChipArea::draw_on_canvas(const Cairo::RefPtr<Cairo::Context> &cr,
         {
             if (globalInputPins->at(i)->binds->at(j)->isClicked)
             {
-                cr->set_source_rgb(255.0 / 255.0, 0, 0);
-                cr->set_line_width(8);
+                cr->set_source_rgb(255.0 / 255.0, 168/255.0, 180/255.0);
+                cr->set_line_width(9);
                 draw_wire_between(globalInputPins->at(i)->binds->at(j), cr);
             }
 
-            cr->set_line_width(4);
+            cr->set_line_width(5);
             if (globalInputPins->at(i)->binds->at(j)->isHovered)
             {
-                cr->set_line_width(6);
+                cr->set_line_width(7);
             }
             else
             {
@@ -1420,11 +1420,11 @@ void ChipArea::draw_on_canvas(const Cairo::RefPtr<Cairo::Context> &cr,
 
             if (globalInputPins->at(i)->state == 1)
             {
-                cr->set_source_rgb(255 / 255.0, 255 / 255.0, 255 / 255.0);
+                cr->set_source_rgb(255 / 255.0, 255/ 255.0, 255/ 255.0);
             }
             else
             {
-                cr->set_source_rgb(20 / 255.0, 20 / 255.0, 20 / 255.0);
+                cr->set_source_rgb(115/ 255.0, 115/ 255.0, 115/ 255.0);
             }
 
             draw_wire_between(globalInputPins->at(i)->binds->at(j), cr);
@@ -1434,15 +1434,15 @@ void ChipArea::draw_on_canvas(const Cairo::RefPtr<Cairo::Context> &cr,
         {
             if (globalInputPins->at(i)->gbinds->at(j)->isClicked)
             {
-                cr->set_source_rgb(255.0 / 255.0, 0, 0);
-                cr->set_line_width(8);
+                cr->set_source_rgb(255.0 / 255.0, 168/255.0, 180/255.0);
+                cr->set_line_width(9);
                 draw_wire_between(globalInputPins->at(i)->gbinds->at(j), cr);
             }
 
-            cr->set_line_width(4);
+            cr->set_line_width(5);
             if (globalInputPins->at(i)->gbinds->at(j)->isHovered)
             {
-                cr->set_line_width(6);
+                cr->set_line_width(7);
             }
             else
             {
@@ -1450,11 +1450,11 @@ void ChipArea::draw_on_canvas(const Cairo::RefPtr<Cairo::Context> &cr,
 
             if (globalInputPins->at(i)->state == 1)
             {
-                cr->set_source_rgb(255 / 255.0, 255 / 255.0, 255 / 255.0);
+                cr->set_source_rgb(255 / 255.0, 255/ 255.0, 255/ 255.0);
             }
             else
             {
-                cr->set_source_rgb(20 / 255.0, 20 / 255.0, 20 / 255.0);
+                cr->set_source_rgb(115/ 255.0, 115/ 255.0, 115/ 255.0);
             }
             draw_wire_between(globalInputPins->at(i)->gbinds->at(j), cr);
         }
@@ -1686,7 +1686,7 @@ void Pin::drawNormal(const Cairo::RefPtr<Cairo::Context> &cr)
     }
     else
     {
-        cr->set_source_rgb(20 / 255.0, 20 / 255.0, 20 / 255.0);
+        cr->set_source_rgb(0/ 255.0, 0/ 255.0, 0/ 255.0);
     }
     cr->arc(x, y, radius, 0, 2 * M_PI);
     cr->fill();
@@ -2035,27 +2035,27 @@ void Chip::draw(const Cairo::RefPtr<Cairo::Context> &cr)
         {
             if (outputPins[i]->binds->at(j)->isClicked)
             {
-                cr->set_source_rgb(255.0 / 255.0, 0, 0);
-                cr->set_line_width(8);
+                cr->set_source_rgb(255.0 / 255.0, 168/255.0, 180/255.0);
+                cr->set_line_width(9);
                 draw_wire_between(outputPins[i]->binds->at(j), cr);
             }
 
-            cr->set_line_width(4);
+            cr->set_line_width(5);
             if (outputPins[i]->binds->at(j)->isHovered)
             {
-                cr->set_line_width(6);
+                cr->set_line_width(7);
             }
             else
             {
             }
             if (outputPins[i]->state == 1)
             {
-                cr->set_source_rgb(255 / 255.0, 255 / 255.0, 255 / 255.0);
+                cr->set_source_rgb(255 / 255.0, 255/ 255.0, 255/ 255.0);
             }
 
             else
             {
-                cr->set_source_rgb(20 / 255.0, 20 / 255.0, 20 / 255.0);
+                cr->set_source_rgb(115/ 255.0, 115/ 255.0, 115/ 255.0);
             }
 
             draw_wire_between(outputPins[i]->binds->at(j), cr);
@@ -2073,15 +2073,15 @@ void Chip::draw(const Cairo::RefPtr<Cairo::Context> &cr)
         {
             if (outputPins[i]->bindsToGlobalOutput->at(j)->isClicked)
             {
-                cr->set_source_rgb(255.0 / 255.0, 0, 0);
-                cr->set_line_width(8);
+                cr->set_source_rgb(255.0 / 255.0, 168/255.0, 180/255.0);
+                cr->set_line_width(9);
                 draw_wire_between(outputPins[i]->bindsToGlobalOutput->at(j), cr);
             }
 
-            cr->set_line_width(4);
+            cr->set_line_width(5);
             if (outputPins[i]->bindsToGlobalOutput->at(j)->isHovered)
             {
-                cr->set_line_width(6);
+                cr->set_line_width(7);
             }
             else
             {
@@ -2089,11 +2089,11 @@ void Chip::draw(const Cairo::RefPtr<Cairo::Context> &cr)
 
             if (outputPins[i]->state == 1)
             {
-                cr->set_source_rgb(255 / 255.0, 255 / 255.0, 255 / 255.0);
+                cr->set_source_rgb(255 / 255.0, 255/ 255.0, 255/ 255.0);
             }
             else
             {
-                cr->set_source_rgb(20 / 255.0, 20 / 255.0, 20 / 255.0);
+                cr->set_source_rgb(155/ 255.0, 155/ 255.0, 155/ 255.0);
             }
             // width - globalOutputPins->at(i)->radius - 10
 
