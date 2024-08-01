@@ -4,6 +4,9 @@
 
 **Digisim** is a digital logic simulator developed using C++ and Gtkmm 4. It is designed for educational purposes, allowing users to design, simulate, and manage digital circuits. The application supports the creation and reuse of custom chips, facilitating the construction of complex circuits.
 
+## Website
+***Find Installer Here [Digisim](https://ev-od.github.io/DigiSem-WebSite/)***
+
 ## Features
 
 - **User-Friendly GUI**: Built with Gtkmm 4, providing an intuitive and visually appealing interface.
