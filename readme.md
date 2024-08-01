@@ -40,7 +40,6 @@
     + For Windows:
 
         Follow the instructions provided in the INSTALL.md file in the repository for Windows-specific build steps.
-        
 # Usage
 ## Creating Circuits
 1. **Start a New Project**: Use the main menu to create a new project.
